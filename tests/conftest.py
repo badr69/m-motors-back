@@ -1,5 +1,6 @@
 import pytest
 from app import create_app
+from app.core.config import TestConfig
 from app.core.db import Base, engine, SessionLocal
 
 
@@ -9,28 +10,34 @@ from app.core.db import Base, engine, SessionLocal
 @pytest.fixture(scope="session")
 def app():
     app = create_app()
-    app.config.update({
-        "TESTING": True,
-    })
+    app.config.from_object(TestConfig)
 
     with app.app_context():
-        from app.core.config import Config
-        print("TEST DB =>", Config.SQLALCHEMY_DATABASE_URI)
+        print("TEST DB =>", app.config["SQLALCHEMY_DATABASE_URI"])
+
+        Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
+
         yield app
-        # Base.metadata.drop_all(bind=engine)
-        print(Base.metadata.tables.keys())
+
+        Base.metadata.drop_all(bind=engine)
+
 
 # ======================
-# DB SESSION
+# DB SESSION ISOLÉE
 # ======================
 @pytest.fixture()
 def db_session():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    connection = engine.connect()
+    transaction = connection.begin()
+
+    session = SessionLocal(bind=connection)
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 # ======================

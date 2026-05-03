@@ -33,14 +33,14 @@ class Config:
     # =====================
     # DATABASE (TEST)
     # =====================
-    TEST_DB_NAME = os.getenv("TEST_DB_NAME", "m-motors_test_db")
+    TEST_DB_NAME = os.getenv("TEST_DB_NAME")
 
     SQLALCHEMY_TEST_DATABASE_URI = (
         f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}"
         f"@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}"
     )
 
-    # =====================
-    # SQLALCHEMY OPTIONS
-    # =====================
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+class TestConfig(Config):
+    SQLALCHEMY_DATABASE_URI = Config.SQLALCHEMY_TEST_DATABASE_URI
+    TESTING = True
