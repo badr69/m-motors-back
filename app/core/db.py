@@ -1,32 +1,33 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from app.core.config import Config
 
+
 # =====================
-# ENGINE
+# DATABASE ENGINE
 # =====================
 engine = create_engine(
     Config.SQLALCHEMY_DATABASE_URI,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 # =====================
-# SESSION
+# SESSION FACTORY
 # =====================
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
-
 # =====================
-# BASE (for models)
+# BASE MODEL
 # =====================
 Base = declarative_base()
 
-
 # =====================
-# DB SESSION HANDLER
+# DATABASE SESSION
 # =====================
 def get_db():
     db = SessionLocal()

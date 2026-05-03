@@ -9,9 +9,15 @@ class Config:
     # FLASK
     # =====================
     SECRET_KEY = os.getenv("SECRET_KEY")
+    DEBUG = os.getenv("FLASK_ENV") == "development"
 
     # =====================
-    # DATABASE
+    # JWT
+    # =====================
+    JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", 2))
+
+    # =====================
+    # DATABASE (DEV)
     # =====================
     DB_HOST = os.getenv("DB_HOST")
     DB_PORT = os.getenv("DB_PORT")
@@ -24,6 +30,17 @@ class Config:
         f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # =====================
+    # DATABASE (TEST)
+    # =====================
+    TEST_DB_NAME = os.getenv("TEST_DB_NAME", "m-motors_test_db")
 
-    DEBUG = os.getenv("FLASK_ENV") == "development"
+    SQLALCHEMY_TEST_DATABASE_URI = (
+        f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{TEST_DB_NAME}"
+    )
+
+    # =====================
+    # SQLALCHEMY OPTIONS
+    # =====================
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

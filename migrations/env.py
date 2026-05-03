@@ -1,5 +1,7 @@
 from app.core.db import Base
 from app.core.config import Config
+from app.modules.roles.model import Role
+from app.modules.users.model import User
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
