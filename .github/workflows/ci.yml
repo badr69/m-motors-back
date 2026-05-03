@@ -10,6 +10,18 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      # ===== DATABASE (TEST ALWAYS DATA) =====
+      DB_HOST: postgresql-badr.alwaysdata.net
+      DB_PORT: 5432
+      DB_NAME: badr_m_motors_test_db
+      DB_USER: badr
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      # ===== APP =====
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      FLASK_ENV: testing
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
