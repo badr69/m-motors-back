@@ -1,12 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import Config
-import os
 
 # =====================
-# DATABASE URL (DEV ou TEST selon env)
+# DATABASE URL
 # =====================
-DATABASE_URL = os.getenv("DATABASE_URL", Config.SQLALCHEMY_DATABASE_URI)
+DATABASE_URL = Config.SQLALCHEMY_DATABASE_URI
 
 # =====================
 # ENGINE
@@ -30,13 +29,3 @@ SessionLocal = sessionmaker(
 # BASE
 # =====================
 Base = declarative_base()
-
-# =====================
-# DB SESSION
-# =====================
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

@@ -8,20 +8,14 @@ from app.core.db import Base, engine
 
 def create_app():
 
-    # =====================
     # LOAD ENV
-    # =====================
     load_dotenv()
 
-    # =====================
-    # INIT APP
-    # =====================
+    # APP INIT
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # =====================
-    # CORS (IMPORTANT FRONTEND JS)
-    # =====================
+    # CORS
     CORS(
         app,
         resources={r"/api/v1/*": {
@@ -30,20 +24,14 @@ def create_app():
         supports_credentials=True
     )
 
-    # =====================
-    # DATABASE INIT (DEV ONLY)
-    # =====================
-    # Base.metadata.create_all(bind=engine)
+    # DB INIT
+    Base.metadata.create_all(bind=engine)
 
-    # =====================
-    # BLUEPRINTS
-    # =====================
+    # ROUTES
     from app.api.v1 import api_v1
     app.register_blueprint(api_v1, url_prefix="/api/v1")
 
-    # =====================
-    # ERROR HANDLERS (OPTIONNEL MAIS PRO)
-    # =====================
+    # ERRORS
     @app.errorhandler(404)
     def not_found(error):
         return {"message": "Route not found"}, 404

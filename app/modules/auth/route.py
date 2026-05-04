@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from app.modules.auth.controller import AuthController
-from app.core.db import SessionLocal
 from app.core.security.decorators import login_required
+from app.core.db import SessionLocal
 
 auth_bp = Blueprint("auth", __name__)
 
