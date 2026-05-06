@@ -28,16 +28,16 @@ def create_admin():
             return
 
         # 3. créer user admin
-	# 3. créer user admin
-	print("USERNAME BEFORE INSERT:", repr(username))
-	print("EMAIL BEFORE INSERT:", repr(email))
+        # 3. créer user admin
+        print("USERNAME BEFORE INSERT:", repr(username))
+        print("EMAIL BEFORE INSERT:", repr(email))
 
-	admin_user = User(
-    	username=username,
-    	email=email,
-    	password=generate_password_hash(password),
-    	role_id=admin_role.id
-)
+        admin_user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password),
+            role_id=admin_role.id
+        )
         admin_user = User(
             username=username,
             email=email,
@@ -60,10 +60,6 @@ def create_admin():
 
 if __name__ == "__main__":
     create_admin()
-
-
-
-
 
 # from app.core.db import SessionLocal
 # from app.modules.users.model import User
