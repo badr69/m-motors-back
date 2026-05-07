@@ -16,7 +16,6 @@ def app():
     with app.app_context():
         yield app
 
-
 # ======================
 # DB SESSION (clean per test)
 # ======================
@@ -30,7 +29,6 @@ def db_session(app):
         yield db
     finally:
         db.close()
-
 
 # ======================
 # CLIENT

@@ -27,7 +27,7 @@ def create_admin():
             print("⚠️ User already exists")
             return
 
-        # 3. créer user admin
+
         # 3. créer user admin
         print("USERNAME BEFORE INSERT:", repr(username))
         print("EMAIL BEFORE INSERT:", repr(email))
@@ -60,7 +60,7 @@ def create_admin():
 
 if __name__ == "__main__":
     create_admin()
-
+#
 # from app.core.db import SessionLocal
 # from app.modules.users.model import User
 # from app.modules.roles.model import Role
