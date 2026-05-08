@@ -9,6 +9,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Debug SSH key size
+        run: echo "${{ secrets.VPS_SSH_KEY }}" | wc -c
+
       - name: Deploy via SSH on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
