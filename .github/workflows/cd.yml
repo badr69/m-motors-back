@@ -19,7 +19,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
+          username: badreddine
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /var/www/m-motors/m-motors-back
