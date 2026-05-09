@@ -4,7 +4,7 @@ from flask import Blueprint
 from app.modules.auth.route import auth_bp
 from app.modules.roles.route import role_bp
 
-api_v1 = Blueprint("api_v1", __name__)
+api_v1 = Blueprint("api_v1", __name__, url_prefix="/api")
 
 
 # =====================

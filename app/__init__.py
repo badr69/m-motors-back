@@ -1,43 +1,60 @@
 from flask import Flask
 from dotenv import load_dotenv
 from flask_cors import CORS
+
 from app.core.config import Config
 from app.core.db import Base, engine
 
 
 def create_app():
 
+    # =====================
     # LOAD ENV
+    # =====================
     load_dotenv()
 
-    # APP INIT
+    # =====================
+    # INIT APP
+    # =====================
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # CORS
-    # CORS(
-    #     app,
-    #     resources={r"/api/v1/*": {"origins": "*"}},
-    #     supports_credentials=True
-    # )
+    # =====================
+    # CORS (IMPORTANT FRONTEND JS)
+    # =====================
     CORS(
         app,
         resources={r"/api/v1/*": {
-            "origins": ["http://127.0.0.1:5500",
-                        "http://84.46.241.76:8080"
-            ]
+            "origins": ["http://127.0.0.1:5500"]
         }},
         supports_credentials=True
     )
 
-    # DB INIT
-    Base.metadata.create_all(bind=engine)
+    # =====================
+    # DATABASE INIT (DEV ONLY)
+    # =====================
+    # Base.metadata.create_all(bind=engine)
 
-    # ROUTES
+    # =====================
+    # BLUEPRINTS
+    # =====================
     from app.api.v1 import api_v1
     app.register_blueprint(api_v1, url_prefix="/api/v1")
 
-    # ERRORS
+    # =====================
+    # ROOT ROUTE (AJOUTÉ ICI)
+    # =====================
+    @app.route("/")
+    def home():
+        return {
+            "message": "M-Motors API",
+            "status": "running",
+            "version": "v1"
+        }
+
+    # =====================
+    # ERROR HANDLERS
+    # =====================
     @app.errorhandler(404)
     def not_found(error):
         return {"message": "Route not found"}, 404
