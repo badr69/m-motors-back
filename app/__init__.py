@@ -42,7 +42,18 @@ def create_app():
     app.register_blueprint(api_v1, url_prefix="/api/v1")
 
     # =====================
-    # ERROR HANDLERS (OPTIONNEL MAIS PRO)
+    # ROOT ROUTE (AJOUTÉ ICI)
+    # =====================
+    @app.route("/")
+    def home():
+        return {
+            "message": "M-Motors API",
+            "status": "running",
+            "version": "v1"
+        }
+
+    # =====================
+    # ERROR HANDLERS
     # =====================
     @app.errorhandler(404)
     def not_found(error):
