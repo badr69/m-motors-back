@@ -1,5 +1,4 @@
 from werkzeug.security import generate_password_hash
-
 from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
