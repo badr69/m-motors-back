@@ -6,12 +6,21 @@ from alembic import context
 from app.core.db import Base
 from app.core.config import Config
 
-# Alembic Config
+# Alembic Config object
 config = context.config
 
-# Logging
+# Logging configuration
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# ---------------------------------------------------
+# 🔥 IMPORT DES MODELS (IMPORTANT POUR AUTOGENERATE)
+# ---------------------------------------------------
+from app.modules.users.model import User
+from app.modules.roles.model import Role
+from app.modules.vehicles.model import Vehicle
+from app.modules.rental_dossiers.model import RentalDossier
+from app.modules.documents.model import Document
 
 # Metadata utilisée par Alembic
 target_metadata = Base.metadata
@@ -33,6 +42,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 # -------------------------
 # ONLINE MODE
 # -------------------------
@@ -53,6 +63,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 # -------------------------
 # RUN
