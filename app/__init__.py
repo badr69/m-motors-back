@@ -25,7 +25,10 @@ def create_app():
     CORS(
         app,
         resources={r"/api/v1/*": {
-            "origins": ["http://127.0.0.1:5500"]
+            "origins": [
+                "http://84.46.241.76:8080",
+                "http://127.0.0.1:5500"
+            ]
         }},
         supports_credentials=True
     )

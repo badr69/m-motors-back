@@ -6,6 +6,7 @@ from app.core.security.jwt import (
 )
 from app.core.security.password import verify_password
 
+
 class AuthService:
 
     @staticmethod
@@ -14,10 +15,27 @@ class AuthService:
         user = db.query(User).filter(User.email == email).first()
 
         if not user:
-            return None, "User not found"
+            return None, "Invalid credentials"
 
-        if not verify_password(password, user.password):
-            return None, "Invalid password"
+        if not user.is_active:
+            return None, "Account disabled"
+
+        # sécurité supplémentaire
+        if not user.password_hash:
+            return None, "Invalid credentials"
+
+        try:
+            if not verify_password(password, user.password_hash):
+                return None, "Invalid credentials"
+        except Exception:
+            return None, "Invalid credentials"
+
+        role = "USER"
+        try:
+            if user.role:
+                role = user.role.name
+        except Exception:
+            role = "USER"
 
         return {
             "access_token": generate_access_token(user),
@@ -26,7 +44,7 @@ class AuthService:
                 "user_id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "role": user.role.name if user.role else "USER"
+                "role": role
             }
         }, None
 
@@ -80,9 +98,16 @@ class AuthService:
         if not user:
             return None, "User not found"
 
+        role = "USER"
+        try:
+            if user.role:
+                role = user.role.name
+        except Exception:
+            role = "USER"
+
         return {
             "user_id": user.id,
             "username": user.username,
             "email": user.email,
-            "role": user.role.name if user.role else "USER"
+            "role": role
         }, None
