@@ -36,7 +36,7 @@ def create_admin():
         # CREATE ADMIN
         # =====================
         admin = User(
-            username="admin",
+            username="badreddine",
             email="badreddine@yahoo.fr",
             password_hash=generate_password_hash("Setif_19000"),
             role_id=role.id,
