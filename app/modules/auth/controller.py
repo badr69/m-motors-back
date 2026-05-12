@@ -4,6 +4,9 @@ from app.modules.auth.service import AuthService
 
 class AuthController:
 
+    # =====================
+    # LOGIN
+    # =====================
     @staticmethod
     def login(data, db):
         email = data.get("email")
@@ -16,9 +19,11 @@ class AuthController:
 
         return jsonify(result), 200
 
+    # =====================
+    # REFRESH
+    # =====================
     @staticmethod
-    def refresh(db, auth_header: str):
-
+    def refresh(db, auth_header):
         result, error = AuthService.refresh_token(db, auth_header)
 
         if error:
@@ -26,14 +31,19 @@ class AuthController:
 
         return jsonify(result), 200
 
+    # =====================
+    # LOGOUT
+    # =====================
     @staticmethod
     def logout():
         return jsonify(AuthService.logout()), 200
 
+    # =====================
+    # CURRENT USER
+    # =====================
     @staticmethod
-    def current_user(db, auth_header):
-
-        result, error = AuthService.current_user(db, auth_header)
+    def current_user(db, user):
+        result, error = AuthService.current_user(db, user)
 
         if error:
             return jsonify({"message": error}), 401

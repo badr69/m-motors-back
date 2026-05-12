@@ -3,6 +3,7 @@ from app.modules.auth.controller import AuthController
 from app.core.db import SessionLocal
 from app.core.security.decorators import login_required
 
+
 auth_bp = Blueprint("auth", __name__)
 
 
@@ -20,7 +21,7 @@ def login():
 
 
 # =====================
-# REFRESH
+# REFRESH TOKEN
 # =====================
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh():
@@ -49,7 +50,7 @@ def logout():
 def current_user():
     db = SessionLocal()
     try:
-        auth_header = request.headers.get("Authorization")
-        return AuthController.current_user(db, auth_header)
+        # user injecté par decorator
+        return AuthController.current_user(db, request.user)
     finally:
         db.close()
