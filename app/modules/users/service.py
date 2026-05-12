@@ -36,6 +36,7 @@ class UserService:
     # UPDATE
     @staticmethod
     def update_user(db: Session, user: User, data: dict):
+        print(data)
         for key, value in data.items():
             setattr(user, key, value)
 

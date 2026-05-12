@@ -39,6 +39,8 @@ def create_admin():
             username="badreddine",
             email="badreddine@yahoo.fr",
             password_hash=generate_password_hash("Setif_19000"),
+            phone="0660374596",
+            address="lyon",
             role_id=role.id,
             is_active=True
         )

@@ -13,6 +13,9 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
 
+    phone = Column(String(30), nullable=True)
+    address = Column(String(255), nullable=True)
+
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     role = relationship("Role")
 
