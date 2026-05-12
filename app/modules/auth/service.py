@@ -1,43 +1,117 @@
-import jwt
-from datetime import datetime, timedelta, timezone
-from app.core.config import Config
+from app.modules.users.model import User
+from app.core.security.jwt import (
+    generate_access_token,
+    generate_refresh_token,
+    decode_token
+)
+from app.core.security.password import verify_password
 
 
-# =====================
-# ACCESS TOKEN
-# =====================
-def generate_access_token(user):
-    payload = {
-        "user_id": user.id,
-        "email": user.email,
+class AuthService:
 
-        # sécurité : éviter crash si role null
-        "role": user.role.name if user.role else "USER",
+    # =====================
+    # LOGIN
+    # =====================
+    @staticmethod
+    def login(db, email: str, password: str):
 
-        "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(
-            hours=Config.JWT_EXPIRATION_HOURS
-        )
-    }
+        user = db.query(User).filter(User.email == email).first()
 
-    return jwt.encode(payload, Config.SECRET_KEY, algorithm="HS256")
+        if not user:
+            return None, "Invalid credentials"
 
+        if not user.is_active:
+            return None, "Account disabled"
 
-# =====================
-# REFRESH TOKEN
-# =====================
-def generate_refresh_token(user):
-    payload = {
-        "user_id": user.id,
-        "type": "refresh",
-        "exp": datetime.now(timezone.utc) + timedelta(days=7)
-    }
+        # sécurité supplémentaire
+        if not user.password_hash:
+            return None, "Invalid credentials"
 
-    return jwt.encode(payload, Config.SECRET_KEY, algorithm="HS256")
+        # protection crash hash
+        try:
+            valid = verify_password(password, user.password_hash)
+        except Exception:
+            return None, "Invalid credentials"
 
+        if not valid:
+            return None, "Invalid credentials"
 
-# =====================
-# DECODE TOKEN
-# =====================
-def decode_token(token):
-    return jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
+        # rôle safe
+        role = "USER"
+        try:
+            if user.role:
+                role = user.role.name
+        except Exception:
+            role = "USER"
+
+        return {
+            "access_token": generate_access_token(user),
+            "refresh_token": generate_refresh_token(user),
+
+            "user": {
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": role
+            }
+        }, None
+
+    # =====================
+    # REFRESH TOKEN
+    # =====================
+    @staticmethod
+    def refresh_token(db, auth_header):
+
+        if not auth_header:
+            return None, "Token missing"
+
+        try:
+            token = auth_header.split(" ")[1]
+            payload = decode_token(token)
+
+            if payload.get("type") != "refresh":
+                return None, "Invalid token type"
+
+            user = db.query(User).filter(
+                User.id == payload.get("user_id")
+            ).first()
+
+            if not user:
+                return None, "User not found"
+
+            return {
+                "access_token": generate_access_token(user)
+            }, None
+
+        except Exception:
+            return None, "Invalid or expired token"
+
+    # =====================
+    # LOGOUT
+    # =====================
+    @staticmethod
+    def logout():
+        return {"message": "Logged out successfully"}
+
+    # =====================
+    # CURRENT USER
+    # =====================
+    @staticmethod
+    def current_user(db, user):
+
+        if not user:
+            return None, "User not found"
+
+        role = "USER"
+        try:
+            if user.role:
+                role = user.role.name
+        except Exception:
+            role = "USER"
+
+        return {
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": role
+        }, None
