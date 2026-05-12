@@ -20,7 +20,9 @@ def login_required(f):
             token = parts[1]
             payload = decode_token(token)
 
-            request.user = payload
+            # ✅ CLEAN WAY
+            request.user_id = payload.get("user_id")
+            request.user_role = payload.get("role")
 
         except Exception:
             return jsonify({"message": "Invalid or expired token"}), 401
@@ -29,16 +31,13 @@ def login_required(f):
 
     return decorated
 
-
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = getattr(request, "user", None)
 
-        if not user:
-            return jsonify({"message": "Unauthorized"}), 401
+        role = getattr(request, "user_role", None)
 
-        if user.get("role") != "ADMIN":
+        if role != "ADMIN":
             return jsonify({"message": "Forbidden (admin only)"}), 403
 
         return f(*args, **kwargs)

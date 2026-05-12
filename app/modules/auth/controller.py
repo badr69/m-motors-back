@@ -42,8 +42,8 @@ class AuthController:
     # CURRENT USER
     # =====================
     @staticmethod
-    def current_user(db, user):
-        result, error = AuthService.current_user(db, user)
+    def current_user(db, user_id):
+        result, error = AuthService.current_user(db, user_id)
 
         if error:
             return jsonify({"message": error}), 401

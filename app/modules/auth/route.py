@@ -45,12 +45,11 @@ def logout():
 # =====================
 # CURRENT USER
 # =====================
-@auth_bp.route("/currentUser", methods=["GET"])
+@auth_bp.route("/currentUser")
 @login_required
 def current_user():
     db = SessionLocal()
     try:
-        # user injecté par decorator
-        return AuthController.current_user(db, request.user)
+        return AuthController.current_user(db, request.user_id)
     finally:
         db.close()

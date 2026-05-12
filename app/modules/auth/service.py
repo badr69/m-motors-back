@@ -97,7 +97,9 @@ class AuthService:
     # CURRENT USER
     # =====================
     @staticmethod
-    def current_user(db, user):
+    def current_user(db, user_id):
+
+        user = db.query(User).filter(User.id == user_id).first()
 
         if not user:
             return None, "User not found"
@@ -106,8 +108,8 @@ class AuthService:
         try:
             if user.role:
                 role = user.role.name
-        except Exception:
-            role = "USER"
+        except:
+            pass
 
         return {
             "user_id": user.id,
