@@ -25,7 +25,6 @@ def roles():
     finally:
         db.close()
 
-
 # =====================
 # GET ONE
 # =====================
@@ -38,7 +37,6 @@ def get_role(role_id):
         return RoleController.get_one(role_id, db)
     finally:
         db.close()
-
 
 # =====================
 # UPDATE
@@ -53,7 +51,6 @@ def update_role(role_id):
         return RoleController.update(role_id, request.get_json(), db)
     finally:
         db.close()
-
 
 # =====================
 # DELETE
