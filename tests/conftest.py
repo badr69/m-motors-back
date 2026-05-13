@@ -1,41 +1,55 @@
 import pytest
-from app import create_app
-from app.core.db import Base, engine, SessionLocal
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.core.db import Base
 
 
 # ======================
-# APP TEST
+# TEST DATABASE URL
 # ======================
-@pytest.fixture(scope="session")
-def app():
-    app = create_app()
-    app.config.update({
-        "TESTING": True,
-    })
-
-    with app.app_context():
-        yield app
+TEST_DATABASE_URL = "postgresql+psycopg2://badr:Setif_19000@postgresql-badr.alwaysdata.net:5432/badr_m_motors_test_db"
 
 # ======================
-# DB SESSION (clean per test)
+# ENGINE
 # ======================
-@pytest.fixture()
-def db_session(app):
-    Base.metadata.drop_all(bind=engine)
+engine = create_engine(TEST_DATABASE_URL)
+
+
+TestingSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# ======================
+# SETUP / TEARDOWN DB
+# ======================
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+
+    # DROP + CREATE SAFE (gère FK automatiquement)
+    Base.metadata.drop_all(bind=engine, checkfirst=True)
     Base.metadata.create_all(bind=engine)
 
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    yield
+
+    # Base.metadata.drop_all(bind=engine, checkfirst=True)
+
 
 # ======================
-# CLIENT
+# DB SESSION FIXTURE
 # ======================
 @pytest.fixture()
-def client(app, db_session):
-    return app.test_client()
+def db_session():
+
+    session = TestingSessionLocal()
+
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
 
 
 
@@ -43,53 +57,4 @@ def client(app, db_session):
 
 
 
-
-
-# import pytest
-# from app import create_app
-# from app.core.config import TestConfig
-# from app.core.db import Base, engine, SessionLocal
 #
-#
-# # ======================
-# # APP TEST
-# # ======================
-# @pytest.fixture(scope="session")
-# def app():
-#     app = create_app()
-#     app.config.from_object(TestConfig)
-#
-#     with app.app_context():
-#         print("TEST DB =>", app.config["SQLALCHEMY_DATABASE_URI"])
-#
-#         Base.metadata.drop_all(bind=engine)
-#         Base.metadata.create_all(bind=engine)
-#
-#         yield app
-#
-#         Base.metadata.drop_all(bind=engine)
-#
-#
-# # ======================
-# # DB SESSION ISOLÉE
-# # ======================
-# @pytest.fixture()
-# def db_session():
-#     connection = engine.connect()
-#     transaction = connection.begin()
-#
-#     session = SessionLocal(bind=connection)
-#
-#     yield session
-#
-#     session.close()
-#     transaction.rollback()
-#     connection.close()
-#
-#
-# # ======================
-# # CLIENT
-# # ======================
-# @pytest.fixture(scope="session")
-# def client(app):
-#     return app.test_client()

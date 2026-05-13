@@ -16,7 +16,6 @@ def test_role(db_session):
 
     return role
 
-
 # ======================
 # CREATE ROLE
 # ======================
@@ -30,7 +29,6 @@ def test_create_role(db_session):
     assert saved_role is not None
     assert saved_role.name == "MANAGER"
 
-
 # ======================
 # GET ALL ROLES
 # ======================
@@ -39,7 +37,6 @@ def test_get_all_roles(db_session, test_role):
 
     assert roles is not None
     assert len(roles) > 0
-
 
 # ======================
 # GET ROLE BY ID
@@ -51,7 +48,6 @@ def test_get_role_by_id(db_session, test_role):
     assert role.id == test_role.id
     assert role.name == "TEST_ROLE"
 
-
 # ======================
 # UPDATE ROLE
 # ======================
@@ -62,7 +58,6 @@ def test_update_role(db_session, test_role):
     updated_role = db_session.query(Role).filter_by(id=test_role.id).first()
 
     assert updated_role.name == "UPDATED_ROLE"
-
 
 # ======================
 # DELETE ROLE

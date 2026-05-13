@@ -1,4 +1,5 @@
 import pytest
+
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
 from app.modules.roles.model import Role
@@ -6,10 +7,11 @@ from app.core.security.password import hash_password
 
 
 # ======================
-# FIXTURE USER
+# FIXTURE USER ADMIN
 # ======================
 @pytest.fixture()
 def test_user(db_session):
+
     role = db_session.query(Role).filter_by(name="ADMIN").first()
 
     if not role:
@@ -23,9 +25,11 @@ def test_user(db_session):
         user = User(
             username="admin",
             email="admin@test.com",
-            password=hash_password("Admin123!"),
-            role_id=role.id
+            password_hash=hash_password("Admin123!"),
+            role_id=role.id,
+            is_active=True
         )
+
         db_session.add(user)
         db_session.commit()
 
@@ -36,6 +40,7 @@ def test_user(db_session):
 # LOGIN SUCCESS
 # ======================
 def test_login_success(db_session, test_user):
+
     result, error = AuthService.login(
         db_session,
         "admin@test.com",
@@ -47,12 +52,14 @@ def test_login_success(db_session, test_user):
     assert "access_token" in result
     assert "refresh_token" in result
     assert result["user"]["email"] == "admin@test.com"
+    assert result["user"]["role"] == "ADMIN"
 
 
 # ======================
-# LOGIN USER NOT FOUND
+# USER NOT FOUND
 # ======================
 def test_login_user_not_found(db_session):
+
     result, error = AuthService.login(
         db_session,
         "ghost@test.com",
@@ -60,13 +67,14 @@ def test_login_user_not_found(db_session):
     )
 
     assert result is None
-    assert error == "User not found"
+    assert error == "Invalid credentials"
 
 
 # ======================
-# LOGIN WRONG PASSWORD
+# WRONG PASSWORD
 # ======================
 def test_login_wrong_password(db_session, test_user):
+
     result, error = AuthService.login(
         db_session,
         "admin@test.com",
@@ -74,4 +82,4 @@ def test_login_wrong_password(db_session, test_user):
     )
 
     assert result is None
-    assert error == "Invalid password"
+    assert error == "Invalid credentials"
