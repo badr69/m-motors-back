@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from app.modules.auth.service import AuthService
 from app.core.db import SessionLocal
+from app.core.security.jwt_middleware import jwt_required
 
 
 class AuthController:
@@ -12,7 +13,7 @@ class AuthController:
     def register():
         db = SessionLocal()
         try:
-            data = request.get_json()
+            data = request.get_json() or {}
 
             result, error = AuthService.register(db, data)
 
@@ -31,13 +32,15 @@ class AuthController:
     def login():
         db = SessionLocal()
         try:
-            data = request.get_json()
+            data = request.get_json() or {}
 
-            result, error = AuthService.login(
-                db,
-                data.get("email"),
-                data.get("password")
-            )
+            email = data.get("email")
+            password = data.get("password")
+
+            if not email or not password:
+                return jsonify({"message": "Email and password required"}), 400
+
+            result, error = AuthService.login(db, email, password)
 
             if error:
                 return jsonify({"message": error}), 401
@@ -67,9 +70,10 @@ class AuthController:
             db.close()
 
     # =====================
-    # CURRENT USER
+    # CURRENT USER (PROTECTED)
     # =====================
     @staticmethod
+    @jwt_required
     def current_user():
         db = SessionLocal()
         try:

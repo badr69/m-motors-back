@@ -3,7 +3,9 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 
 from app.core.config import Config
-from app.core.db import Base, engine
+from app.core.db import Base, engine, SessionLocal
+
+from app.modules.roles.seed import seed_roles
 
 
 def create_app():
@@ -20,23 +22,29 @@ def create_app():
     app.config.from_object(Config)
 
     # =====================
-    # CORS (IMPORTANT FRONTEND JS)
+    # CORS
     # =====================
-    CORS(
-        app,
-        resources={r"/api/v1/*": {
-            "origins": [
-                "http://84.46.241.76:8080",
-                "http://127.0.0.1:5500"
-            ]
-        }},
-        supports_credentials=True
-    )
+    CORS(app, resources={r"/*": {"origins": [
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://84.46.241.76:8080"
+    ]}}, supports_credentials=True)
 
     # =====================
     # DATABASE INIT (DEV ONLY)
     # =====================
-    # Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine)  # ❌ laissé OFF (normal)
+
+    # =====================
+    # SEED ROLES (IMPORTANT)
+    # =====================
+    try:
+        db = SessionLocal()
+        seed_roles(db)
+        db.close()
+        print("[SEED] Roles OK")
+    except Exception as e:
+        print(f"[SEED ERROR] {e}")
 
     # =====================
     # BLUEPRINTS
@@ -45,7 +53,7 @@ def create_app():
     app.register_blueprint(api_v1, url_prefix="/api/v1")
 
     # =====================
-    # ROOT ROUTE (AJOUTÉ ICI)
+    # ROOT ROUTE
     # =====================
     @app.route("/")
     def home():

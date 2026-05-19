@@ -23,7 +23,7 @@ def test_user(db_session):
         user = User(
             username="admin",
             email="admin@test.com",
-            password=hash_password("Admin123!"),
+            password_hash=hash_password("Admin123!"),
             role_id=role.id
         )
         db_session.add(user)

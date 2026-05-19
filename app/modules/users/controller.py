@@ -25,7 +25,11 @@ class UserController:
             "role_id": data.get("role_id"),
         }
 
-        user = UserService.create_user(db, user_data)
+        # ✅ FIX ICI
+        user, error = UserService.create_user(db, user_data)
+
+        if error:
+            return jsonify({"message": error}), 400
 
         return jsonify({
             "id": user.id,
@@ -48,7 +52,15 @@ class UserController:
                 "username": u.username,
                 "email": u.email,
                 "phone": u.phone,
+                "address": u.address,
                 "role_id": u.role_id,
+
+                # ✅ AJOUT IMPORTANT
+                "role": {
+                    "id": u.role.id,
+                    "name": u.role.name
+                } if u.role else None,
+
                 "created_at": u.created_at.isoformat()
             }
             for u in users
@@ -84,12 +96,18 @@ class UserController:
             data["password_hash"] = hash_password(data["password"])
             del data["password"]
 
-        updated_user = UserService.update_user(db, user, data)
+        updated_user, error = UserService.update_user(db, user, data)
+
+        if error:
+            return jsonify({"message": error}), 400
 
         return jsonify({
             "id": updated_user.id,
             "username": updated_user.username,
             "email": updated_user.email,
+            "phone": updated_user.phone,
+            "address": updated_user.address,
+            "role_id": updated_user.role_id,
             "updated_at": updated_user.updated_at.isoformat()
         }), 200
 

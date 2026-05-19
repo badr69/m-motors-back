@@ -61,17 +61,17 @@ class AuthService:
 
         user = db.query(User).filter(User.email == email).first()
 
+        # USER NOT FOUND
         if not user:
-            return None, "Invalid credentials"
+            return None, "User not found"
 
+        # ACCOUNT DISABLED
         if not user.is_active:
             return None, "Account disabled"
 
-        try:
-            if not verify_password(password, user.password_hash):
-                return None, "Invalid credentials"
-        except:
-            return None, "Invalid credentials"
+        # WRONG PASSWORD
+        if not verify_password(password, user.password_hash):
+            return None, "Invalid password"
 
         role = user.role.name.upper() if user.role else "CLIENT"
 
