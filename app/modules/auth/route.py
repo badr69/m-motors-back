@@ -1,6 +1,7 @@
-from flask import Blueprint
+from flask import Blueprint, request
 from app.modules.auth.controller import AuthController
 from app.core.security.decorators import login_required
+from app.core.security.jwt_middleware import jwt_required
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -11,7 +12,6 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/login", methods=["POST"])
 def login():
     return AuthController.login()
-
 
 # =====================
 # REGISTER
@@ -28,7 +28,6 @@ def register():
 def refresh():
     return AuthController.refresh()
 
-
 # =====================
 # LOGOUT
 # =====================
@@ -37,11 +36,10 @@ def refresh():
 def logout():
     return AuthController.logout()
 
-
 # =====================
 # CURRENT USER
 # =====================
 @auth_bp.route("/currentUser", methods=["GET"])
-@login_required
+@jwt_required
 def current_user():
     return AuthController.current_user()

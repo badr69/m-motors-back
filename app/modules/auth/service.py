@@ -1,96 +1,128 @@
+from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
+from app.core.security.password import verify_password, hash_password
 from app.core.security.jwt import (
     generate_access_token,
     generate_refresh_token,
     decode_token
-)
-from app.core.security.password import (
-    verify_password,
-    hash_password
 )
 
 
 class AuthService:
 
     # =====================
-    # REGISTER
-    # =====================
-    @staticmethod
-    def register(db, data):
-
-        if db.query(User).filter(User.email == data.get("email")).first():
-            return None, "Email already exists"
-
-        if db.query(User).filter(User.username == data.get("username")).first():
-            return None, "Username already exists"
-
-        role = db.query(Role).filter(Role.name == "CLIENT").first()
-
-        if not role:
-            return None, "CLIENT role not found"
-
-        user = User(
-            username=data.get("username"),
-            email=data.get("email"),
-            phone=data.get("phone"),
-            address=data.get("address"),
-            password_hash=hash_password(data.get("password")),
-            role_id=role.id
-        )
-
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        return {
-            "message": "Register successful",
-            "user": {
-                "user_id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "role": role.name.upper()
-            }
-        }, None
-
-    # =====================
     # LOGIN
     # =====================
     @staticmethod
-    def login(db, email, password):
+    def login(email, password):
 
-        user = db.query(User).filter(User.email == email).first()
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.email == email).first()
 
-        # USER NOT FOUND
-        if not user:
-            return None, "User not found"
+            if not user:
+                return None, "User not found"
 
-        # ACCOUNT DISABLED
-        if not user.is_active:
-            return None, "Account disabled"
+            if hasattr(user, "is_active") and user.is_active is False:
+                return None, "Account disabled"
 
-        # WRONG PASSWORD
-        if not verify_password(password, user.password_hash):
-            return None, "Invalid password"
+            if not verify_password(password, user.password_hash):
+                return None, "Invalid password"
 
-        role = user.role.name.upper() if user.role else "CLIENT"
+            role = user.role.name.upper() if user.role else "CLIENT"
 
-        return {
-            "access_token": generate_access_token(user),
-            "refresh_token": generate_refresh_token(user),
-            "user": {
+            return {
+                "access_token": generate_access_token(user),
+                "refresh_token": generate_refresh_token(user),
+                "user": {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": role
+                }
+            }, None
+
+        finally:
+            db.close()
+
+    # =====================
+    # REGISTER
+    # =====================
+    @staticmethod
+    def register(data):
+
+        db = SessionLocal()
+        try:
+            # check email
+            if db.query(User).filter(User.email == data.get("email")).first():
+                return None, "Email already exists"
+
+            # check username
+            if db.query(User).filter(User.username == data.get("username")).first():
+                return None, "Username already exists"
+
+            role = db.query(Role).filter(Role.name == "CLIENT").first()
+
+            if not role:
+                return None, "CLIENT role not found"
+
+            user = User(
+                username=data.get("username"),
+                email=data.get("email"),
+                phone=data.get("phone"),
+                address=data.get("address"),
+                password_hash=hash_password(data.get("password")),
+                role_id=role.id
+            )
+
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+            return {
+                "message": "Register successful",
+                "user": {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": role.name.upper()
+                }
+            }, None
+
+        finally:
+            db.close()
+
+    # =====================
+    # CURRENT USER
+    # =====================
+    @staticmethod
+    def current_user(user_id):
+
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+
+            if not user:
+                return None, "User not found"
+
+            role = user.role.name.upper() if user.role else "CLIENT"
+
+            return {
                 "user_id": user.id,
                 "username": user.username,
                 "email": user.email,
                 "role": role
-            }
-        }, None
+            }, None
+
+        finally:
+            db.close()
 
     # =====================
     # REFRESH TOKEN
     # =====================
     @staticmethod
-    def refresh_token(db, auth_header):
+    def refresh_token(auth_header):
 
         if not auth_header:
             return None, "Token missing"
@@ -102,16 +134,23 @@ class AuthService:
             if payload.get("type") != "refresh":
                 return None, "Invalid token type"
 
-            user = db.query(User).filter(User.id == payload.get("user_id")).first()
+            user_id = payload.get("user_id")
 
-            if not user:
-                return None, "User not found"
+            db = SessionLocal()
+            try:
+                user = db.query(User).filter(User.id == user_id).first()
 
-            return {
-                "access_token": generate_access_token(user)
-            }, None
+                if not user:
+                    return None, "User not found"
 
-        except:
+                return {
+                    "access_token": generate_access_token(user)
+                }, None
+
+            finally:
+                db.close()
+
+        except Exception:
             return None, "Invalid or expired token"
 
     # =====================
@@ -119,24 +158,8 @@ class AuthService:
     # =====================
     @staticmethod
     def logout():
-        return {"message": "Logged out successfully"}
-
-    # =====================
-    # CURRENT USER
-    # =====================
-    @staticmethod
-    def current_user(db, user_id):
-
-        user = db.query(User).filter(User.id == user_id).first()
-
-        if not user:
-            return None, "User not found"
-
-        role = user.role.name.upper() if user.role else "CLIENT"
-
         return {
-            "user_id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "role": role
-        }, None
+            "message": "Logged out successfully"
+        }
+
+

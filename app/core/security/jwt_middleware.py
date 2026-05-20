@@ -16,14 +16,10 @@ def jwt_required(f):
             token = auth_header.split(" ")[1]
             payload = decode_token(token)
 
-            if payload.get("type") != "access":
-                return jsonify({"message": "Invalid token type"}), 401
-
-            # 👇 IMPORTANT : injection user_id
             request.user_id = payload.get("user_id")
 
-        except Exception:
-            return jsonify({"message": "Invalid or expired token"}), 401
+        except Exception as e:
+            return jsonify({"message": "Invalid token"}), 401
 
         return f(*args, **kwargs)
 

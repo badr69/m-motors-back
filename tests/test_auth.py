@@ -35,9 +35,8 @@ def test_user(db_session):
 # ======================
 # LOGIN SUCCESS
 # ======================
-def test_login_success(db_session, test_user):
+def test_login_success(test_user):
     result, error = AuthService.login(
-        db_session,
         "admin@test.com",
         "Admin123!"
     )
@@ -52,9 +51,8 @@ def test_login_success(db_session, test_user):
 # ======================
 # LOGIN USER NOT FOUND
 # ======================
-def test_login_user_not_found(db_session):
+def test_login_user_not_found():
     result, error = AuthService.login(
-        db_session,
         "ghost@test.com",
         "Admin123!"
     )
@@ -66,9 +64,8 @@ def test_login_user_not_found(db_session):
 # ======================
 # LOGIN WRONG PASSWORD
 # ======================
-def test_login_wrong_password(db_session, test_user):
+def test_login_wrong_password(test_user):
     result, error = AuthService.login(
-        db_session,
         "admin@test.com",
         "WrongPassword"
     )
