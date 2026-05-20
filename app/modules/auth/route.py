@@ -1,26 +1,32 @@
-from flask import Blueprint, request
+from flask import Blueprint
 from app.modules.auth.controller import AuthController
 from app.core.security.decorators import login_required
 
-auth_bp = Blueprint("auth", __name__)
 
+auth_bp = Blueprint("auth", __name__)
 
 # =====================
 # LOGIN
 # =====================
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    return AuthController.login(request.get_json())
+    return AuthController.login()
 
 
 # =====================
-# REFRESH
+# REGISTER
+# =====================
+@auth_bp.route("/register", methods=["POST"])
+def register():
+    return AuthController.register()
+
+
+# =====================
+# REFRESH TOKEN
 # =====================
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh():
-    return AuthController.refresh(
-        request.headers.get("Authorization")
-    )
+    return AuthController.refresh()
 
 
 # =====================
@@ -38,6 +44,4 @@ def logout():
 @auth_bp.route("/currentUser", methods=["GET"])
 @login_required
 def current_user():
-    return AuthController.current_user(
-        request.headers.get("Authorization")
-    )
+    return AuthController.current_user()

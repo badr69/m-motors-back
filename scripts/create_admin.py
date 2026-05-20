@@ -1,18 +1,25 @@
+import os
 from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
-from werkzeug.security import generate_password_hash
+from app.core.security.password import hash_password
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def create_admin():
-
     db = SessionLocal()
 
     try:
+        admin_email = os.getenv("ADMIN_EMAIL", "").strip()
+        admin_username = os.getenv("ADMIN_USERNAME", "").strip()
+        admin_password = os.getenv("ADMIN_PASSWORD", "").strip()
 
-        # =====================
-        # CREATE ROLE ADMIN
-        # =====================
+        if not all([admin_email, admin_username, admin_password]):
+            print("Missing ENV variables")
+            return
+
         role = db.query(Role).filter(Role.name == "ADMIN").first()
 
         if not role:
@@ -21,26 +28,16 @@ def create_admin():
             db.commit()
             db.refresh(role)
 
-        # =====================
-        # CHECK ADMIN EXISTS
-        # =====================
-        admin = db.query(User).filter(
-            User.email == "badreddine@yahoo.fr"
-        ).first()
+        admin = db.query(User).filter(User.email == admin_email).first()
 
         if admin:
             print("Admin already exists")
             return
 
-        # =====================
-        # CREATE ADMIN
-        # =====================
         admin = User(
-            username="badreddine",
-            email="badreddine@yahoo.fr",
-            password_hash=generate_password_hash("Setif_19000"),
-            phone="0660374596",
-            address="lyon",
+            username=admin_username,
+            email=admin_email,
+            password_hash=hash_password(admin_password),
             role_id=role.id,
             is_active=True
         )
@@ -61,52 +58,3 @@ def create_admin():
 
 if __name__ == "__main__":
     create_admin()
-
-
-
-
-#
-# from app.core.db import SessionLocal
-# from app.modules.users.model import User
-# from app.modules.roles.model import Role
-# from werkzeug.security import generate_password_hash
-#
-#
-# def create_admin():
-#     db = SessionLocal()
-#
-#     try:
-#         # 1. vérifier ou créer rôle ADMIN
-#         role = db.query(Role).filter(Role.name == "ADMIN").first()
-#
-#         if not role:
-#             role = Role(name="ADMIN")
-#             db.add(role)
-#             db.commit()
-#             db.refresh(role)
-#
-#         # 2. vérifier si admin existe déjà
-#         admin = db.query(User).filter(User.email == "badreddine@yahoo.fr").first()
-#
-#         if admin:
-#             print("Admin already exists")
-#             return
-#
-#         # 3. créer admin
-#         admin = User(
-#             email="badreddine@yahoo.fr",
-#             password=generate_password_hash("Setif_19000"),
-#             role_id=role.id
-#         )
-#
-#         db.add(admin)
-#         db.commit()
-#
-#         print("Admin created successfully")
-#
-#     finally:
-#         db.close()
-#
-#
-# if __name__ == "__main__":
-#     create_admin()
