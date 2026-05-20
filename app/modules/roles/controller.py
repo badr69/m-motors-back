@@ -5,10 +5,13 @@ from app.modules.roles.service import RoleService
 
 class RoleController:
 
+    # =====================
+    # CREATE
+    # =====================
     @staticmethod
-    def create(data, db):
+    def create(data):
 
-        role, error = RoleService.create_role(db, data.get("name"))
+        role, error = RoleService.create_role(data.get("name"))
 
         if error:
             return jsonify({"message": error}), 400
@@ -20,10 +23,13 @@ class RoleController:
             "updated_at": role.updated_at.isoformat()
         }), 201
 
+    # =====================
+    # GET ALL
+    # =====================
     @staticmethod
-    def get_all(db):
+    def get_all():
 
-        roles = RoleService.get_roles(db)
+        roles = RoleService.get_roles()
 
         return jsonify([
             {
@@ -35,10 +41,13 @@ class RoleController:
             for r in roles
         ]), 200
 
+    # =====================
+    # GET ONE
+    # =====================
     @staticmethod
-    def get_one(role_id, db):
+    def get_one(role_id):
 
-        role = RoleService.get_role_by_id(db, role_id)
+        role = RoleService.get_role_by_id(role_id)
 
         if not role:
             return jsonify({"message": "Role not found"}), 404
@@ -50,10 +59,13 @@ class RoleController:
             "updated_at": role.updated_at.isoformat()
         }), 200
 
+    # =====================
+    # UPDATE
+    # =====================
     @staticmethod
-    def update(role_id, data, db):
+    def update(role_id, data):
 
-        role = RoleService.get_role_by_id(db, role_id)
+        role = RoleService.get_role_by_id(role_id)
 
         if not role:
             return jsonify({"message": "Role not found"}), 404
@@ -61,7 +73,7 @@ class RoleController:
         if role.name == "ADMIN":
             return jsonify({"message": "ADMIN role cannot be modified"}), 403
 
-        role, error = RoleService.update_role(db, role, data.get("name"))
+        role, error = RoleService.update_role(role_id, data.get("name"))
 
         if error:
             return jsonify({"message": error}), 400
@@ -72,10 +84,13 @@ class RoleController:
             "updated_at": role.updated_at.isoformat()
         }), 200
 
+    # =====================
+    # DELETE
+    # =====================
     @staticmethod
-    def delete(role_id, db):
+    def delete(role_id):
 
-        role = RoleService.get_role_by_id(db, role_id)
+        role = RoleService.get_role_by_id(role_id)
 
         if not role:
             return jsonify({"message": "Role not found"}), 404
@@ -83,6 +98,9 @@ class RoleController:
         if role.name == "ADMIN":
             return jsonify({"message": "ADMIN role cannot be deleted"}), 403
 
-        RoleService.delete_role(db, role)
+        error = RoleService.delete_role(role_id)
+
+        if error:
+            return jsonify({"message": error}), 400
 
         return jsonify({"message": "Role deleted"}), 200

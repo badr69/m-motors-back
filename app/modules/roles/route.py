@@ -1,7 +1,6 @@
 # roles/route.py
 from flask import Blueprint, request
 from app.modules.roles.controller import RoleController
-from app.core.db import SessionLocal
 from app.core.security.decorators import login_required, admin_required
 
 role_bp = Blueprint("roles", __name__)
@@ -15,15 +14,10 @@ role_bp = Blueprint("roles", __name__)
 @admin_required
 def roles():
 
-    db = SessionLocal()
-    try:
-        if request.method == "GET":
-            return RoleController.get_all(db)
+    if request.method == "GET":
+        return RoleController.get_all()
 
-        return RoleController.create(request.get_json(), db)
-
-    finally:
-        db.close()
+    return RoleController.create(request.get_json())
 
 
 # =====================
@@ -32,12 +26,7 @@ def roles():
 @role_bp.route("/<int:role_id>", methods=["GET"])
 @login_required
 def get_role(role_id):
-
-    db = SessionLocal()
-    try:
-        return RoleController.get_one(role_id, db)
-    finally:
-        db.close()
+    return RoleController.get_one(role_id)
 
 
 # =====================
@@ -47,12 +36,7 @@ def get_role(role_id):
 @login_required
 @admin_required
 def update_role(role_id):
-
-    db = SessionLocal()
-    try:
-        return RoleController.update(role_id, request.get_json(), db)
-    finally:
-        db.close()
+    return RoleController.update(role_id, request.get_json())
 
 
 # =====================
@@ -62,9 +46,4 @@ def update_role(role_id):
 @login_required
 @admin_required
 def delete_role(role_id):
-
-    db = SessionLocal()
-    try:
-        return RoleController.delete(role_id, db)
-    finally:
-        db.close()
+    return RoleController.delete(role_id)
