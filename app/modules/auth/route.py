@@ -1,8 +1,6 @@
 from flask import Blueprint, request
 from app.modules.auth.controller import AuthController
 from app.core.security.decorators import login_required
-from app.core.db import SessionLocal
-
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -12,25 +10,17 @@ auth_bp = Blueprint("auth", __name__)
 # =====================
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    db = SessionLocal()
-    try:
-        data = request.get_json()
-        return AuthController.login(data, db)
-    finally:
-        db.close()
+    return AuthController.login(request.get_json())
 
 
 # =====================
-# REFRESH TOKEN
+# REFRESH
 # =====================
 @auth_bp.route("/refresh", methods=["POST"])
 def refresh():
-    db = SessionLocal()
-    try:
-        auth_header = request.headers.get("Authorization")
-        return AuthController.refresh(db, auth_header)
-    finally:
-        db.close()
+    return AuthController.refresh(
+        request.headers.get("Authorization")
+    )
 
 
 # =====================
@@ -45,11 +35,9 @@ def logout():
 # =====================
 # CURRENT USER
 # =====================
-@auth_bp.route("/currentUser")
+@auth_bp.route("/currentUser", methods=["GET"])
 @login_required
 def current_user():
-    db = SessionLocal()
-    try:
-        return AuthController.current_user(db, request.user_id)
-    finally:
-        db.close()
+    return AuthController.current_user(
+        request.headers.get("Authorization")
+    )
