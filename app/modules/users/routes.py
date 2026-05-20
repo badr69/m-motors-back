@@ -1,6 +1,5 @@
 from flask import Blueprint, request
 from app.modules.users.controller import UserController
-from app.core.db import SessionLocal
 from app.core.security.decorators import login_required, admin_required
 
 users_bp = Blueprint("users", __name__)
@@ -13,12 +12,7 @@ users_bp = Blueprint("users", __name__)
 @login_required
 @admin_required
 def create_user():
-
-    db = SessionLocal()
-    try:
-        return UserController.create(request.get_json(), db)
-    finally:
-        db.close()
+    return UserController.create(request.get_json())
 
 
 # =====================
@@ -28,52 +22,32 @@ def create_user():
 @login_required
 @admin_required
 def get_users():
-
-    db = SessionLocal()
-    try:
-        return UserController.get_all(db)
-    finally:
-        db.close()
+    return UserController.get_all()
 
 
 # =====================
-# GET ONE USER (ADMIN OR OWNER)
+# GET ONE USER
 # =====================
 @users_bp.route("/<int:user_id>", methods=["GET"])
 @login_required
 def get_user(user_id):
-
-    db = SessionLocal()
-    try:
-        return UserController.get_one(user_id, db)
-    finally:
-        db.close()
+    return UserController.get_one(user_id)
 
 
 # =====================
-# UPDATE USER (ADMIN OR OWNER)
+# UPDATE USER
 # =====================
 @users_bp.route("/<int:user_id>", methods=["PUT"])
 @login_required
 def update_user(user_id):
-
-    db = SessionLocal()
-    try:
-        return UserController.update(user_id, request.get_json(), db)
-    finally:
-        db.close()
+    return UserController.update(user_id, request.get_json())
 
 
 # =====================
-# DELETE USER (ADMIN ONLY)
+# DELETE USER
 # =====================
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
 @login_required
 @admin_required
 def delete_user(user_id):
-
-    db = SessionLocal()
-    try:
-        return UserController.delete(user_id, db)
-    finally:
-        db.close()
+    return UserController.delete(user_id)
