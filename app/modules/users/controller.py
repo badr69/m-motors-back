@@ -31,12 +31,15 @@ class UserController:
     def get_all():
 
         users = UserService.get_users()
+        print("FIRST USER:", users[0].phone, users[0].address)
 
         return jsonify([
             {
                 "id": u.id,
                 "username": u.username,
                 "email": u.email,
+                "phone": u.phone,
+                "address": u.address,
                 "role_id": u.role_id
             }
             for u in users
