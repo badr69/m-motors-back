@@ -29,9 +29,7 @@ class UserController:
     # =====================
     @staticmethod
     def get_all():
-
         users = UserService.get_users()
-        print("FIRST USER:", users[0].phone, users[0].address)
 
         return jsonify([
             {
@@ -44,6 +42,7 @@ class UserController:
             }
             for u in users
         ]), 200
+
 
 
     # =====================
@@ -61,6 +60,8 @@ class UserController:
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "phone": user.phone,
+            "address": user.address,
             "role_id": user.role_id
         }), 200
 

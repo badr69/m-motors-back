@@ -4,6 +4,7 @@ from app.modules.users.model import User
 from app.modules.roles.model import Role
 from typing import Dict, Any
 from app.core.security.password import hash_password
+from sqlalchemy.orm import joinedload
 
 
 class UserService:
@@ -48,7 +49,11 @@ class UserService:
 
         db = SessionLocal()
         try:
-            return db.query(User).all()
+            return (
+                db.query(User)
+                .options(joinedload(User.role))
+                .all()
+            )
         finally:
             db.close()
 
