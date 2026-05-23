@@ -75,18 +75,27 @@ class UserService:
     # UPDATE USER
     # =====================
     @staticmethod
-    def update_user(user_id: int, data: Dict[str, Any]):
+    def update_user(user_id: int, data: dict, current_user):
 
         db = SessionLocal()
+
         try:
             user = db.query(User).filter(User.id == user_id).first()
 
             if not user:
                 return None, "User not found"
 
-            if "password" in data:
-                data["password_hash"] = hash_password(data["password"])
-                del data["password"]
+            # =====================
+            # ADMIN PROTECTION
+            # =====================
+            if user.role.name.lower() == "admin":
+                return None, "ADMIN user cannot be modified"
+
+            # =====================
+            # NORMAL USER RESTRICTION
+            # =====================
+            if current_user.role.name.lower() != "admin" and current_user.id != user_id:
+                return None, "Forbidden"
 
             for key, value in data.items():
                 setattr(user, key, value)
@@ -94,24 +103,39 @@ class UserService:
             db.commit()
             db.refresh(user)
 
-            return user, None
+            return {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            }, None
 
         finally:
             db.close()
-
-
     # =====================
     # DELETE USER
     # =====================
     @staticmethod
-    def delete_user(user_id: int):
+    def delete_user(user_id: int, current_user):
 
         db = SessionLocal()
+
         try:
             user = db.query(User).filter(User.id == user_id).first()
 
             if not user:
                 return False, "User not found"
+
+            # =====================
+            # PROTECTION ADMIN
+            # =====================
+            if user.role.name.lower() == "admin":
+                return False, "ADMIN user cannot be deleted"
+
+            # =====================
+            # PROTECTION USER (optionnel mais propre)
+            # =====================
+            if current_user.role.name.lower() != "admin" and current_user.id != user_id:
+                return False, "Forbidden"
 
             db.delete(user)
             db.commit()
@@ -121,3 +145,58 @@ class UserService:
         finally:
             db.close()
 
+    # =====================
+    # GET CURRENT USER (ME)
+    # =====================
+    @staticmethod
+    def get_me(current_user):
+
+        return {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "phone": current_user.phone,
+            "address": current_user.address,
+            "role": current_user.role.name
+        }, None
+
+    # =====================
+    # UPDATE CURRENT USER (ME)
+    # =====================
+    @staticmethod
+    def update_me(current_user, data, db):
+
+        user = db.query(User).filter(User.id == current_user.id).first()
+
+        if not user:
+            return None, "User not found"
+
+        for key, value in data.items():
+            setattr(user, key, value)
+
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "phone": user.phone,
+            "address": user.address
+        }, None
+
+    # =====================
+    # DELETE CURRENT USER (ME)
+    # =====================
+    @staticmethod
+    def delete_me(current_user, db):
+
+        user = db.query(User).filter(User.id == current_user.id).first()
+
+        if not user:
+            return False, "User not found"
+
+        db.delete(user)
+        db.commit()
+
+        return True, None
