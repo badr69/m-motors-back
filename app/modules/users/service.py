@@ -1,4 +1,3 @@
-from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
@@ -39,7 +38,6 @@ class UserService:
         finally:
             db.close()
 
-
     # =====================
     # GET ALL USERS
     # =====================
@@ -51,7 +49,6 @@ class UserService:
             return db.query(User).all()
         finally:
             db.close()
-
 
     # =====================
     # GET BY ID
@@ -67,9 +64,9 @@ class UserService:
                 return None, "User not found"
 
             return user, None
+
         finally:
             db.close()
-
 
     # =====================
     # UPDATE USER
@@ -78,22 +75,17 @@ class UserService:
     def update_user(user_id: int, data: dict, current_user):
 
         db = SessionLocal()
-
         try:
             user = db.query(User).filter(User.id == user_id).first()
 
             if not user:
                 return None, "User not found"
 
-            # =====================
             # ADMIN PROTECTION
-            # =====================
             if user.role.name.lower() == "admin":
                 return None, "ADMIN user cannot be modified"
 
-            # =====================
-            # NORMAL USER RESTRICTION
-            # =====================
+            # USER RESTRICTION
             if current_user.role.name.lower() != "admin" and current_user.id != user_id:
                 return None, "Forbidden"
 
@@ -111,6 +103,7 @@ class UserService:
 
         finally:
             db.close()
+
     # =====================
     # DELETE USER
     # =====================
@@ -118,22 +111,17 @@ class UserService:
     def delete_user(user_id: int, current_user):
 
         db = SessionLocal()
-
         try:
             user = db.query(User).filter(User.id == user_id).first()
 
             if not user:
                 return False, "User not found"
 
-            # =====================
-            # PROTECTION ADMIN
-            # =====================
+            # ADMIN PROTECTION
             if user.role.name.lower() == "admin":
                 return False, "ADMIN user cannot be deleted"
 
-            # =====================
-            # PROTECTION USER (optionnel mais propre)
-            # =====================
+            # USER RESTRICTION
             if current_user.role.name.lower() != "admin" and current_user.id != user_id:
                 return False, "Forbidden"
 
@@ -149,54 +137,74 @@ class UserService:
     # GET CURRENT USER (ME)
     # =====================
     @staticmethod
-    def get_me(current_user):
+    def get_me(user_id):
 
-        return {
-            "id": current_user.id,
-            "username": current_user.username,
-            "email": current_user.email,
-            "phone": current_user.phone,
-            "address": current_user.address,
-            "role": current_user.role.name
-        }, None
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+
+            if not user:
+                return None, "User not found"
+
+            return {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role": user.role.name
+            }, None
+
+        finally:
+            db.close()
 
     # =====================
     # UPDATE CURRENT USER (ME)
     # =====================
     @staticmethod
-    def update_me(current_user, data, db):
+    def update_me(user_id, data):
 
-        user = db.query(User).filter(User.id == current_user.id).first()
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
 
-        if not user:
-            return None, "User not found"
+            if not user:
+                return None, "User not found"
 
-        for key, value in data.items():
-            setattr(user, key, value)
+            for key, value in data.items():
+                setattr(user, key, value)
 
-        db.commit()
-        db.refresh(user)
+            db.commit()
+            db.refresh(user)
 
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "phone": user.phone,
-            "address": user.address
-        }, None
+            return {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address
+            }, None
+
+        finally:
+            db.close()
 
     # =====================
     # DELETE CURRENT USER (ME)
     # =====================
     @staticmethod
-    def delete_me(current_user, db):
+    def delete_me(user_id):
 
-        user = db.query(User).filter(User.id == current_user.id).first()
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
 
-        if not user:
-            return False, "User not found"
+            if not user:
+                return False, "User not found"
 
-        db.delete(user)
-        db.commit()
+            db.delete(user)
+            db.commit()
 
-        return True, None
+            return True, None
+
+        finally:
+            db.close()

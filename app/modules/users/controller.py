@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 from app.modules.users.service import UserService
 
 
@@ -103,9 +103,9 @@ class UserController:
     # UPDATE ME
     # =====================
     @staticmethod
-    def update_me(current_user, data, db):
+    def update_me(current_user, data):
 
-        user, error = UserService.update_me(current_user, data, db)
+        user, error = UserService.update_me(current_user, data)
 
         if error:
             return jsonify({"message": error}), 400

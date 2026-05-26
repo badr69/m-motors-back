@@ -20,7 +20,6 @@ def get_roles():
 # =====================
 @role_bp.route("", methods=["POST"])
 @login_required
-@admin_required
 def create_role():
     data = request.get_json() or {}
     return RoleController.create(data)
