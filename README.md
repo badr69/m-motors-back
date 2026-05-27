@@ -16,15 +16,14 @@ Backend REST API développé avec Flask pour la gestion des utilisateurs, authen
 ---
 
 ## Installation locale
-
-```bash
 pip install -r requirements.txt
 python run.py
-
-## l'app est accessible via http://84.46.241.76:8000
+## l'app est accessible via http://84.46.241.76
 admin: badreddine@yahoo.fr
 password admin: Setif_19000
-
 user
 islam@yahoo.fr
 password: Setif_19000
+
+
+
