@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify
 from app.modules.users.service import UserService
 
 
@@ -19,6 +19,8 @@ class UserController:
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "phone": user.phone,
+            "address": user.address,
             "role_id": user.role_id
         }), 201
 
@@ -33,14 +35,14 @@ class UserController:
 
         return jsonify([
             {
-                "id": u.id,
-                "username": u.username,
-                "email": u.email,
-                "phone": u.phone,
-                "address": u.address,
-                "role_id": u.role_id
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role_id": user.role_id
             }
-            for u in users
+            for user in users
         ]), 200
 
 
@@ -59,6 +61,8 @@ class UserController:
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "phone": user.phone,
+            "address": user.address,
             "role_id": user.role_id
         }), 200
 
@@ -116,9 +120,9 @@ class UserController:
     # DELETE ME
     # =====================
     @staticmethod
-    def delete_me(current_user, db):
+    def delete_me(current_user):
 
-        success, error = UserService.delete_me(current_user, db)
+        success, error = UserService.delete_me(current_user)
 
         if not success:
             return jsonify({"message": error}), 400

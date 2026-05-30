@@ -12,8 +12,8 @@ def create_admin():
     db = SessionLocal()
 
     try:
-        admin_email = os.getenv("ADMIN_EMAIL", "").strip()
         admin_username = os.getenv("ADMIN_USERNAME", "").strip()
+        admin_email = os.getenv("ADMIN_EMAIL", "").strip()
         admin_password = os.getenv("ADMIN_PASSWORD", "").strip()
 
         if not all([admin_email, admin_username, admin_password]):
