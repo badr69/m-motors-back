@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify
 from app.modules.users.service import UserService
 
 
