@@ -4,7 +4,6 @@ from app.core.security.decorators import login_required, admin_required
 
 users_bp = Blueprint("users", __name__)
 
-
 # =====================
 # CREATE USER (ADMIN ONLY)
 # =====================
@@ -13,7 +12,6 @@ users_bp = Blueprint("users", __name__)
 @admin_required
 def create_user():
     return UserController.create(request.get_json())
-
 
 # =====================
 # GET ALL USERS (ADMIN ONLY)
@@ -24,7 +22,6 @@ def create_user():
 def get_users():
     return UserController.get_all()
 
-
 # =====================
 # GET ONE USER
 # =====================
@@ -33,21 +30,33 @@ def get_users():
 def get_user(user_id):
     return UserController.get_one(user_id)
 
-
 # =====================
 # UPDATE USER
 # =====================
 @users_bp.route("/<int:user_id>", methods=["PUT"])
 @login_required
 def update_user(user_id):
-    return UserController.update(user_id, request.get_json())
-
+    return UserController.update(
+        user_id,
+        request.get_json(),
+        request.user_id
+    )
 
 # =====================
 # DELETE USER
 # =====================
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
 @login_required
-@admin_required
 def delete_user(user_id):
-    return UserController.delete(user_id)
+    return UserController.delete(
+        user_id,
+        request.user_id
+    )
+
+# =====================
+# GET ME
+# =====================
+@users_bp.route("/me", methods=["GET"])
+@login_required
+def get_me():
+    return UserController.get_me(request.user_id)
