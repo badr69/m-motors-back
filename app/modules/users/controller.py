@@ -120,9 +120,9 @@ class UserController:
     # DELETE ME
     # =====================
     @staticmethod
-    def delete_me(current_user, db):
+    def delete_me(current_user):
 
-        success, error = UserService.delete_me(current_user, db)
+        success, error = UserService.delete_me(current_user)
 
         if not success:
             return jsonify({"message": error}), 400
