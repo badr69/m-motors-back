@@ -112,6 +112,8 @@ class AuthService:
                 "user_id": user.id,
                 "username": user.username,
                 "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
                 "role": role
             }, None
 
