@@ -26,9 +26,23 @@ def create_app():
     # =====================
     CORS(
         app,
-        resources={r"/*": {"origins": "http://127.0.0.1:5500"}},
-        supports_credentials=True
+        resources={r"/api/v1/*": {
+            "origins": [
+                "http://127.0.0.1:5500",
+                "http://localhost:5500"
+            ]
+        }},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
+
+    @app.after_request
+    def after_request(response):
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+        return response
+
 
     # =====================
     # DATABASE INIT (DEV ONLY)

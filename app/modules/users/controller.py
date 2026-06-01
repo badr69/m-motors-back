@@ -1,5 +1,6 @@
-from flask import jsonify
+from flask import request, jsonify
 from app.modules.users.service import UserService
+from app.core.security.jwt_middleware import jwt_required
 
 
 class UserController:
@@ -8,49 +9,55 @@ class UserController:
     # CREATE USER
     # =====================
     @staticmethod
-    def create(data):
+    @jwt_required
+    def create_user():
 
-        user, error = UserService.create_user(data)
+        data = request.get_json() or {}
+
+        result, error = UserService.create_user(data)
 
         if error:
             return jsonify({"message": error}), 400
 
         return jsonify({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "phone": user.phone,
-            "address": user.address,
-            "role_id": user.role_id
+            "message": "User created successfully",
+            "user": {
+                "id": result.id,
+                "username": result.username,
+                "email": result.email,
+                "role": result.role.name if result.role else None
+            }
         }), 201
-
 
     # =====================
     # GET ALL USERS
     # =====================
     @staticmethod
-    def get_all():
+    @jwt_required
+    def get_users():
 
         users = UserService.get_users()
 
-        return jsonify([
+        data = [
             {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "phone": user.phone,
-                "address": user.address,
-                "role_id": user.role_id
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "phone": u.phone,
+                "address": u.address,
+                "role": u.role.name if u.role else None
             }
-            for user in users
-        ]), 200
+            for u in users
+        ]
 
+        return jsonify(data), 200
 
     # =====================
-    # GET ONE USER
+    # GET USER BY ID
     # =====================
     @staticmethod
-    def get_one(user_id):
+    @jwt_required
+    def get_user(user_id):
 
         user, error = UserService.get_user_by_id(user_id)
 
@@ -63,68 +70,89 @@ class UserController:
             "email": user.email,
             "phone": user.phone,
             "address": user.address,
+            "role": user.role.name if user.role else None,
             "role_id": user.role_id
         }), 200
-
 
     # =====================
     # UPDATE USER
     # =====================
     @staticmethod
-    def update(user_id, data, current_user):
+    @jwt_required
+    def update_user(user_id):
 
-        user, error = UserService.update_user(user_id, data, current_user)
+        data = request.get_json() or {}
+        current_user = request.current_user
+
+        result, error = UserService.update_user(user_id, data, current_user)
 
         if error:
             return jsonify({"message": error}), 403
 
-        return jsonify(user), 200
+        return jsonify(result), 200
 
     # =====================
     # DELETE USER
     # =====================
     @staticmethod
-    def delete(user_id, current_user):
+    @jwt_required
+    def delete_user(user_id):
+
+        current_user = request.current_user
 
         success, error = UserService.delete_user(user_id, current_user)
 
-        if not success:
+        if error:
             return jsonify({"message": error}), 403
 
-        return jsonify({"message": "User deleted"}), 200
+        return jsonify({"message": "User deleted successfully"}), 200
 
     # =====================
-    # GET ME
+    # ME
     # =====================
     @staticmethod
-    def get_me(current_user):
+    @jwt_required
+    def get_me():
 
-        data, error = UserService.get_me(current_user)
+        user_id = request.current_user["user_id"]
 
-        return jsonify(data), 200
+        result, error = UserService.get_me(user_id)
+
+        if error:
+            return jsonify({"message": error}), 404
+
+        return jsonify(result), 200
 
     # =====================
     # UPDATE ME
     # =====================
     @staticmethod
-    def update_me(current_user, data):
+    @jwt_required
+    def update_me():
 
-        user, error = UserService.update_me(current_user, data)
+        user_id = request.current_user["user_id"]
+        data = request.get_json() or {}
+
+        result, error = UserService.update_me(user_id, data)
 
         if error:
             return jsonify({"message": error}), 400
 
-        return jsonify(user), 200
+        return jsonify(result), 200
 
     # =====================
     # DELETE ME
     # =====================
     @staticmethod
-    def delete_me(current_user):
+    @jwt_required
+    def delete_me():
 
-        success, error = UserService.delete_me(current_user)
+        user_id = request.current_user["user_id"]
 
-        if not success:
+        success, error = UserService.delete_me(user_id)
+
+        if error:
             return jsonify({"message": error}), 400
 
-        return jsonify({"message": "Account deleted"}), 200
+        return jsonify({"message": "Account deleted successfully"}), 200
+

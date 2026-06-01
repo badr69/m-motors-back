@@ -79,4 +79,6 @@ class AuthController:
     # =====================
     @staticmethod
     def logout():
-        return jsonify(AuthService.logout()), 200
+        result, error = AuthService.logout()
+
+        return jsonify(result), 200

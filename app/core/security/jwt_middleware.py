@@ -9,17 +9,34 @@ def jwt_required(f):
 
         auth_header = request.headers.get("Authorization")
 
+        print("[AUTH HEADER]", auth_header)
+
         if not auth_header:
-            return jsonify({"message": "Missing token"}), 401
+            return jsonify({"message": "Token missing"}), 401
+
+        parts = auth_header.split(" ")
+
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            return jsonify({"message": "Invalid auth format"}), 401
+
+        token = parts[1]
 
         try:
-            token = auth_header.split(" ")[1]
             payload = decode_token(token)
+            print("[JWT PAYLOAD]", payload)
 
-            request.user_id = payload.get("user_id")
+            if not payload:
+                return jsonify({"message": "Invalid token"}), 401
+
+            request.current_user = {
+                "user_id": payload.get("user_id"),
+                "email": payload.get("email"),
+                "role": (payload.get("role") or "").lower()
+            }
 
         except Exception as e:
-            return jsonify({"message": "Invalid token"}), 401
+            print("[JWT ERROR]", str(e))
+            return jsonify({"message": "Token invalid or expired"}), 401
 
         return f(*args, **kwargs)
 

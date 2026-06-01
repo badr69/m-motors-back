@@ -36,7 +36,7 @@ class AuthService:
                 "access_token": generate_access_token(user),
                 "refresh_token": generate_refresh_token(user),
                 "user": {
-                    "user_id": user.id,
+                    "id": user.id,
                     "username": user.username,
                     "email": user.email,
                     "role": role
@@ -54,11 +54,9 @@ class AuthService:
 
         db = SessionLocal()
         try:
-            # check email
             if db.query(User).filter(User.email == data.get("email")).first():
                 return None, "Email already exists"
 
-            # check username
             if db.query(User).filter(User.username == data.get("username")).first():
                 return None, "Username already exists"
 
@@ -83,9 +81,11 @@ class AuthService:
             return {
                 "message": "Register successful",
                 "user": {
-                    "user_id": user.id,
+                    "id": user.id,
                     "username": user.username,
                     "email": user.email,
+                    "phone": user.phone,
+                    "address": user.address,
                     "role": role.name.upper()
                 }
             }, None
@@ -109,9 +109,11 @@ class AuthService:
             role = user.role.name.upper() if user.role else "CLIENT"
 
             return {
-                "user_id": user.id,
+                "id": user.id,
                 "username": user.username,
                 "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
                 "role": role
             }, None
 
@@ -160,6 +162,4 @@ class AuthService:
     def logout():
         return {
             "message": "Logged out successfully"
-        }
-
-
+        }, None
