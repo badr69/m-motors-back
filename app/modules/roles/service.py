@@ -161,10 +161,5 @@ class RoleService:
 
             return True, None
 
-        except Exception as e:
-            db.rollback()
-            print("[ROLE DELETE ERROR]", str(e))
-            return False, "Server error"
-
         finally:
             db.close()

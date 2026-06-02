@@ -81,14 +81,12 @@ class AuthService:
             role_name = (user.role.name if user.role else "CLIENT").upper().strip()
 
             return {
-                "access_token": generate_access_token(user),
-                "refresh_token": generate_refresh_token(user),
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "role": role_name
-                }
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role": role
             }, None
 
         finally:

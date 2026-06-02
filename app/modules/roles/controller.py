@@ -67,4 +67,4 @@ class RoleController:
         if not success:
             return jsonify({"message": error}), 403
 
-        return jsonify({"message": "Role deleted successfully"}), 200
+        return jsonify({"message": "Role deleted"}), 200
