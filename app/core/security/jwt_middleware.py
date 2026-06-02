@@ -1,42 +1,54 @@
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, g
 from app.core.security.jwt import decode_token
 
 
 def jwt_required(f):
+
     @wraps(f)
     def decorated(*args, **kwargs):
 
+        print("\n[JWT] middleware hit")
+
         auth_header = request.headers.get("Authorization")
 
-        print("[AUTH HEADER]", auth_header)
+        print("[JWT DEBUG] Authorization header =", auth_header)
 
         if not auth_header:
+            print("[JWT ERROR] missing header")
             return jsonify({"message": "Token missing"}), 401
 
         parts = auth_header.split(" ")
 
-        if len(parts) != 2 or parts[0].lower() != "bearer":
+        print("[JWT DEBUG] parts =", parts)
+
+        if len(parts) != 2:
+            print("[JWT ERROR] bad format")
+            return jsonify({"message": "Invalid auth format"}), 401
+
+        if parts[0].lower() != "bearer":
+            print("[JWT ERROR] invalid scheme =", parts[0])
             return jsonify({"message": "Invalid auth format"}), 401
 
         token = parts[1]
 
-        try:
-            payload = decode_token(token)
-            print("[JWT PAYLOAD]", payload)
+        print("[JWT DEBUG] token =", token[:25], "...")
 
-            if not payload:
-                return jsonify({"message": "Invalid token"}), 401
+        payload = decode_token(token)
 
-            request.current_user = {
-                "user_id": payload.get("user_id"),
-                "email": payload.get("email"),
-                "role": (payload.get("role") or "").lower()
-            }
+        if not payload:
+            print("[JWT ERROR] invalid/expired token")
+            return jsonify({"message": "Invalid token"}), 401
 
-        except Exception as e:
-            print("[JWT ERROR]", str(e))
-            return jsonify({"message": "Token invalid or expired"}), 401
+        g.current_user = {
+            "user_id": payload.get("user_id"),
+            "email": payload.get("email"),
+            "role": (payload.get("role") or "USER").upper().strip()
+        }
+
+        print("[JWT DEBUG] user =", g.current_user)
+
+        print("[JWT] OK")
 
         return f(*args, **kwargs)
 

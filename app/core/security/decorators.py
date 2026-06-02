@@ -1,46 +1,6 @@
 from functools import wraps
-from flask import request, jsonify
-from app.core.security.jwt import decode_token
-
-
-def login_required(f):
-
-    @wraps(f)
-    def decorated(*args, **kwargs):
-
-        # =====================
-        # ALLOW CORS PREFLIGHT
-        # =====================
-        if request.method == "OPTIONS":
-            return "", 200
-
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
-            return jsonify({"message": "Token missing"}), 401
-
-        try:
-
-            parts = auth_header.split(" ")
-
-            if len(parts) != 2 or parts[0] != "Bearer":
-                return jsonify({"message": "Invalid token format"}), 401
-
-            token = parts[1]
-            payload = decode_token(token)
-
-            # =====================
-            # STORE USER DATA
-            # =====================
-            request.user_id = payload.get("user_id")
-            request.user_role = payload.get("role")
-
-        except Exception:
-            return jsonify({"message": "Invalid or expired token"}), 401
-
-        return f(*args, **kwargs)
-
-    return decorated
+from flask import g, jsonify
+from app.core.security.jwt_middleware import jwt_required
 
 
 def admin_required(f):
@@ -49,16 +9,30 @@ def admin_required(f):
     def decorated(*args, **kwargs):
 
         # =====================
-        # ALLOW CORS PREFLIGHT
+        # DEBUG MINIMAL
         # =====================
-        if request.method == "OPTIONS":
-            return "", 200
+        user = getattr(g, "current_user", None)
 
-        role = getattr(request, "user_role", None)
+        print("[ADMIN DEBUG] current_user =", user)
 
+        if not user:
+            print("[ADMIN DEBUG] NO USER IN CONTEXT")
+            return jsonify({"message": "Unauthorized"}), 401
+
+        role = (user.get("role") or "").upper().strip()
+
+        print("[ADMIN DEBUG] role =", role)
+
+        # =====================
+        # CHECK ADMIN ROLE
+        # =====================
         if role != "ADMIN":
+            print("[ADMIN DEBUG] FORBIDDEN ACCESS")
             return jsonify({"message": "Forbidden (admin only)"}), 403
+
+        print("[ADMIN DEBUG] ACCESS GRANTED")
 
         return f(*args, **kwargs)
 
-    return decorated
+    # IMPORTANT: JWT FIRST, THEN ADMIN CHECK
+    return jwt_required(decorated)
