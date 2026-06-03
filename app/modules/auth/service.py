@@ -106,7 +106,7 @@ class AuthService:
             if not user:
                 return None, "User not found"
 
-            role = user.role.name.upper() if user.role else "CLIENT"
+            role_name = user.role.name.upper() if user.role else "CLIENT"
 
             return {
                 "id": user.id,
@@ -114,7 +114,7 @@ class AuthService:
                 "email": user.email,
                 "phone": user.phone,
                 "address": user.address,
-                "role": role
+                "role": role_name
             }, None
 
         finally:
