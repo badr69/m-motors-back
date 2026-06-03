@@ -33,7 +33,7 @@ class AuthService:
             if not verify_password(password, user.password_hash):
                 return None, "Invalid password"
 
-            role = user.role.name.upper() if user.role else "CLIENT"
+            role_name = user.role.name.upper() if user.role else "CLIENT"
 
             return {
                 "access_token": generate_access_token(user),
@@ -42,7 +42,7 @@ class AuthService:
                     "id": user.id,
                     "username": user.username,
                     "email": user.email,
-                    "role": role
+                    "role": role_name
                 }
             }, None
 
