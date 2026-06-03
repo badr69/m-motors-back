@@ -20,6 +20,9 @@ class AuthService:
         db = SessionLocal()
         try:
             user = db.query(User).filter(User.email == email).first()
+            print("USER:", user)
+            print("ROLE:", user.role)
+            print("ROLE NAME:", getattr(user.role, "name", None))
 
             if not user:
                 return None, "User not found"
