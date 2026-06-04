@@ -1,5 +1,5 @@
 # Image Python
-FROM python:3.12
+FROM python:3.11-slim
 
 # Dossier de travail dans le container
 WORKDIR /app

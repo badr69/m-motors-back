@@ -1,7 +1,7 @@
 from flask import Flask
 from dotenv import load_dotenv
-from flask_cors import CORS
 
+from flask_cors import CORS
 from app.core.config import Config
 from app.core.db import Base, engine, SessionLocal
 
@@ -26,13 +26,7 @@ def create_app():
     # =====================
     CORS(
         app,
-        resources={r"/api/v1/*": {
-            "origins": [
-                "http://127.0.0.1:5500",
-                "http://localhost:5500"
-            ]
-        }},
-        supports_credentials=True,
+        resources={r"/api/v1/*": {"origins": "*"}},
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
