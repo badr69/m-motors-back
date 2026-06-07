@@ -1,5 +1,4 @@
 import time
-import pytest
 
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
