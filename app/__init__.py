@@ -37,22 +37,23 @@ def create_app():
         response.headers.add("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
         return response
 
-
     # =====================
     # DATABASE INIT (DEV ONLY)
     # =====================
-    # Base.metadata.create_all(bind=engine)  # ❌ laissé OFF (normal)
+    # Base.metadata.create_all(bind=engine)  # OFF volontaire
 
     # =====================
-    # SEED ROLES (IMPORTANT)
+    # SEED ROLES (SAFE CONTEXT)
     # =====================
-    try:
+    with app.app_context():
         db = SessionLocal()
-        seed_roles(db)
-        db.close()
-        print("[SEED] Roles OK")
-    except Exception as e:
-        print(f"[SEED ERROR] {e}")
+        try:
+            seed_roles(db)
+            print("[SEED] Roles OK")
+        except Exception as e:
+            print(f"[SEED ERROR] {e}")
+        finally:
+            db.close()
 
     # =====================
     # BLUEPRINTS

@@ -1,64 +1,47 @@
 from functools import wraps
 from flask import request, jsonify
-from app.core.security.jwt import decode_token
 
 
-def login_required(f):
+def require_role(*allowed_roles):
 
-    @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorator(f):
 
-        # =====================
-        # ALLOW CORS PREFLIGHT
-        # =====================
-        if request.method == "OPTIONS":
-            return "", 200
-
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
-            return jsonify({"message": "Token missing"}), 401
-
-        try:
-
-            parts = auth_header.split(" ")
-
-            if len(parts) != 2 or parts[0] != "Bearer":
-                return jsonify({"message": "Invalid token format"}), 401
-
-            token = parts[1]
-            payload = decode_token(token)
+        @wraps(f)
+        def wrapper(*args, **kwargs):
 
             # =====================
-            # STORE USER DATA
+            # GET CURRENT USER FROM REQUEST (JWT)
             # =====================
-            request.user_id = payload.get("user_id")
-            request.user_role = payload.get("role")
+            current_user = getattr(request, "current_user", None)
 
-        except Exception:
-            return jsonify({"message": "Invalid or expired token"}), 401
+            if not current_user:
+                return jsonify({
+                    "message": "Unauthorized"
+                }), 401
 
-        return f(*args, **kwargs)
+            user_role = (current_user.get("role") or "").upper()
 
-    return decorated
+            # =====================
+            # NORMALIZE ROLES
+            # =====================
+            normalized_allowed_roles = [
+                role.upper() for role in allowed_roles
+            ]
+
+            # =====================
+            # ACCESS CHECK
+            # =====================
+            if user_role not in normalized_allowed_roles:
+                return jsonify({
+                    "message": "Forbidden"
+                }), 403
+
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
-def admin_required(f):
 
-    @wraps(f)
-    def decorated(*args, **kwargs):
 
-        # =====================
-        # ALLOW CORS PREFLIGHT
-        # =====================
-        if request.method == "OPTIONS":
-            return "", 200
-
-        role = getattr(request, "user_role", None)
-
-        if role != "ADMIN":
-            return jsonify({"message": "Forbidden (admin only)"}), 403
-
-        return f(*args, **kwargs)
-
-    return decorated

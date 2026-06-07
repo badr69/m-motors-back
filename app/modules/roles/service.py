@@ -1,154 +1,181 @@
-from app.core.db import SessionLocal
 from app.modules.roles.model import Role
+from app.core.logger import setup_logger
+
+logger = setup_logger("role-service")
 
 
 class RoleService:
 
     # =====================
-    # CREATE
+    # NORMALIZE (ONLY LOWERCASE)
     # =====================
     @staticmethod
-    def create_role(name: str):
+    def normalize(role: str) -> str:
+        if not role:
+            return None
 
-        db = SessionLocal()
+        return role.strip().lower()
 
-        try:
+    # =====================
+    # CREATE ROLE
+    # =====================
+    @staticmethod
+    def create_role(db, name: str):
 
-            if not name or name.strip() == "":
-                return None, "Name is required"
+        logger.info(f"Creating role: {name}")
 
-            role_name = name.strip().lower()
+        if not name or name.strip() == "":
+            return {"data": None, "error": "Name is required"}
 
-            existing = db.query(Role).filter(Role.name == role_name).first()
+        role_name = RoleService.normalize(name)
 
-            if existing:
-                return None, "Role already exists"
+        existing = db.query(Role).filter(
+            Role.name == role_name
+        ).first()
 
-            role = Role(name=role_name)
+        if existing:
+            return {"data": None, "error": "Role already exists"}
 
-            db.add(role)
-            db.commit()
-            db.refresh(role)
+        role = Role(name=role_name)
 
-            return {
+        db.add(role)
+        db.commit()
+        db.refresh(role)
+
+        return {
+            "data": {
                 "id": role.id,
-                "name": role.name,
-                "created_at": role.created_at.isoformat(),
-                "updated_at": role.updated_at.isoformat()
-            }, None
-
-        finally:
-            db.close()
+                "name": role.name.upper()
+            },
+            "error": None
+        }
 
     # =====================
-    # GET ALL
+    # GET ALL ROLES
     # =====================
     @staticmethod
-    def get_roles():
+    def get_roles(db):
 
-        db = SessionLocal()
+        roles = db.query(Role).all()
 
-        try:
-
-            roles = db.query(Role).all()
-
-            return [
+        return {
+            "data": [
                 {
                     "id": r.id,
-                    "name": r.name,
-                    "created_at": r.created_at.isoformat(),
-                    "updated_at": r.updated_at.isoformat()
+                    "name": r.name.upper()
                 }
                 for r in roles
-            ]
-
-        finally:
-            db.close()
+            ],
+            "error": None
+        }
 
     # =====================
-    # GET ONE
+    # GET ROLE BY ID
     # =====================
     @staticmethod
-    def get_role_by_id(role_id: int):
+    def get_role_by_id(db, role_id):
 
-        db = SessionLocal()
+        role = db.query(Role).filter(
+            Role.id == role_id
+        ).first()
 
-        try:
+        if not role:
+            return {"data": None, "error": "Role not found"}
 
-            role = db.query(Role).filter(Role.id == role_id).first()
-
-            if not role:
-                return None, "Role not found"
-
-            return {
+        return {
+            "data": {
                 "id": role.id,
-                "name": role.name,
-                "created_at": role.created_at.isoformat(),
-                "updated_at": role.updated_at.isoformat()
-            }, None
-
-        finally:
-            db.close()
+                "name": role.name.upper()
+            },
+            "error": None
+        }
 
     # =====================
-    # UPDATE
+    # UPDATE ROLE
     # =====================
     @staticmethod
-    def update_role(role_id: int, name: str):
+    def update_role(db, role_id, data):
 
-        db = SessionLocal()
+        role = db.query(Role).filter(
+            Role.id == role_id
+        ).first()
 
-        try:
+        if not role:
+            return {"data": None, "error": "Role not found"}
 
-            role = db.query(Role).filter(Role.id == role_id).first()
+        if "name" in data:
 
-            if not role:
-                return None, "Role not found"
+            new_name = RoleService.normalize(data["name"])
 
-            if role.name.lower() == "admin":
-                return None, "ADMIN role cannot be modified"
+            existing = db.query(Role).filter(
+                Role.name == new_name
+            ).first()
 
-            if not name or name.strip() == "":
-                return None, "Name is required"
+            if existing and existing.id != role.id:
+                return {"data": None, "error": "Role already exists"}
 
-            role.name = name.strip().lower()
+            role.name = new_name
 
-            db.commit()
-            db.refresh(role)
+        db.commit()
+        db.refresh(role)
 
-            return {
+        return {
+            "data": {
                 "id": role.id,
-                "name": role.name,
-                "created_at": role.created_at.isoformat(),
-                "updated_at": role.updated_at.isoformat()
-            }, None
-
-        finally:
-            db.close()
+                "name": role.name.upper()
+            },
+            "error": None
+        }
 
     # =====================
-    # DELETE
+    # DELETE ROLE
     # =====================
     @staticmethod
-    def delete_role(role_id: int):
+    def delete_role(db, role_id):
 
-        db = SessionLocal()
+        role = db.query(Role).filter(
+            Role.id == role_id
+        ).first()
 
-        try:
+        if not role:
+            return {"data": None, "error": "Role not found"}
 
-            role = db.query(Role).filter(Role.id == role_id).first()
+        db.delete(role)
+        db.commit()
 
-            if not role:
-                return False, "Role not found"
+        return {
+            "data": {
+                "message": "Role deleted successfully"
+            },
+            "error": None
+        }
 
-            if role.name.lower() == "admin":
-                return False, "ADMIN role cannot be deleted"
+    # =====================
+    # CHECK ROLE EXISTS
+    # =====================
+    @staticmethod
+    def is_valid(db, role: str) -> bool:
 
-            db.delete(role)
-            db.commit()
+        if not role:
+            return False
 
-            return True, None
+        role = RoleService.normalize(role)
 
-        finally:
-            db.close()
+        existing = db.query(Role).filter(
+            Role.name == role
+        ).first()
 
+        return existing is not None
+
+    # =====================
+    # GET ROLE NAMES
+    # =====================
+    @staticmethod
+    def get_role_names(db):
+
+        roles = db.query(Role).all()
+
+        return [
+            role.name.upper()
+            for role in roles
+        ]

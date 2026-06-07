@@ -1,84 +1,92 @@
 from flask import request, jsonify
+from app.core.db import SessionLocal
 from app.modules.auth.service import AuthService
 
 
 class AuthController:
 
-    # =====================
-    # LOGIN
-    # =====================
     @staticmethod
     def login():
-        data = request.get_json() or {}
+        db = SessionLocal()
 
-        email = data.get("email")
-        password = data.get("password")
+        try:
+            data = request.get_json() or {}
+            email = data.get("email")
+            password = data.get("password")
 
-        if not email or not password:
-            return jsonify({"message": "Email and password required"}), 400
+            if not email or not password:
+                return jsonify({"message": "Email and password required"}), 400
 
-        result, error = AuthService.login(email, password)
+            result = AuthService.login(db, email, password)
 
-        if error:
-            return jsonify({"message": error}), 401
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 401
 
-        return jsonify(result), 200
+            return jsonify(result.get("data")), 200
+
+        finally:
+            db.close()
 
 
-    # =====================
-    # REGISTER
-    # =====================
     @staticmethod
     def register():
-        data = request.get_json() or {}
+        db = SessionLocal()
 
-        result, error = AuthService.register(data)
+        try:
+            data = request.get_json() or {}
+            result = AuthService.register(db, data)
 
-        if error:
-            return jsonify({"message": error}), 400
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 400
 
-        return jsonify(result), 201
+            return jsonify(result.get("data")), 201
+
+        finally:
+            db.close()
 
 
-    # =====================
-    # REFRESH
-    # =====================
     @staticmethod
     def refresh():
-        auth_header = request.headers.get("Authorization")
+        db = SessionLocal()
 
-        result, error = AuthService.refresh_token(auth_header)
+        try:
+            auth_header = request.headers.get("Authorization")
 
-        if error:
-            return jsonify({"message": error}), 401
+            result = AuthService.refresh_token(db, auth_header)
 
-        return jsonify(result), 200
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 401
+
+            return jsonify(result.get("data")), 200
+
+        finally:
+            db.close()
 
 
-    # =====================
-    # CURRENT USER
-    # =====================
     @staticmethod
     def current_user():
+        db = SessionLocal()
 
-        user_id = getattr(request, "user_id", None)
+        try:
+            current_user = getattr(request, "current_user", None)
 
-        if not user_id:
-            return jsonify({"message": "Unauthorized"}), 401
+            if not current_user:
+                return jsonify({"message": "Unauthorized"}), 401
 
-        result, error = AuthService.current_user(user_id)
+            user_id = current_user.get("user_id")
 
-        if error:
-            return jsonify({"message": error}), 401
+            result = AuthService.current_user(db, user_id)
 
-        return jsonify(result), 200
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 401
+
+            return jsonify(result.get("data")), 200
+
+        finally:
+            db.close()
 
 
-    # =====================
-    # LOGOUT
-    # =====================
     @staticmethod
     def logout():
-        result, error = AuthService.logout()
-
-        return jsonify(result), 200
+        result = AuthService.logout()
+        return jsonify(result.get("data")), 200

@@ -7,13 +7,11 @@ from app.core.config import Config
 # ACCESS TOKEN
 # =====================
 def generate_access_token(user):
+
     payload = {
         "user_id": user.id,
         "email": user.email,
-
-        # sécurité : éviter crash si role null
-        "role": user.role.name if user.role else "USER",
-
+        "role": (user.role.name if user.role else "CLIENT").upper(),
         "type": "access",
         "exp": datetime.now(timezone.utc) + timedelta(
             hours=Config.JWT_EXPIRATION_HOURS
@@ -27,6 +25,7 @@ def generate_access_token(user):
 # REFRESH TOKEN
 # =====================
 def generate_refresh_token(user):
+
     payload = {
         "user_id": user.id,
         "type": "refresh",
@@ -37,7 +36,30 @@ def generate_refresh_token(user):
 
 
 # =====================
-# DECODE TOKEN
+# DECODE TOKEN (CLEAN + SAFE)
 # =====================
-def decode_token(token):
-    return jwt.decode(token, Config.SECRET_KEY, algorithms=["HS256"])
+def decode_token(token, expected_type=None):
+
+    try:
+        payload = jwt.decode(
+            token,
+            Config.SECRET_KEY,
+            algorithms=["HS256"]
+        )
+
+        # =====================
+        # TYPE VALIDATION
+        # =====================
+        if expected_type and payload.get("type") != expected_type:
+            return None
+
+        return payload
+
+    except jwt.ExpiredSignatureError:
+        return None
+
+    except jwt.InvalidTokenError:
+        return None
+
+    except Exception:
+        return None

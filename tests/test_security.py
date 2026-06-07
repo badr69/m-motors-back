@@ -40,8 +40,9 @@ def test_decode_access_token():
     user = DummyUser()
     token = generate_access_token(user)
 
-    payload = decode_token(token)
+    payload = decode_token(token, expected_type="access")
 
+    assert payload is not None
     assert payload["user_id"] == 1
     assert payload["email"] == "admin@test.com"
     assert payload["role"] == "ADMIN"

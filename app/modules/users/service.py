@@ -1,9 +1,16 @@
-from sqlalchemy.orm import joinedload
-from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
-from typing import Dict, Any
 from app.core.security.password import hash_password
+from app.core.logger import setup_logger
+
+logger = setup_logger("user-service")
+
+
+# =====================
+# HELPER
+# =====================
+def get_role_name(user):
+    return user.role.name.upper() if user.role else "CLIENT"
 
 
 class UserService:
@@ -12,243 +19,207 @@ class UserService:
     # CREATE USER
     # =====================
     @staticmethod
-    def create_user(data: Dict[str, Any]):
+    def create_user(db, data):
 
-        db = SessionLocal()
-        try:
-            role = db.query(Role).filter(Role.id == data.get("role_id")).first()
+        logger.info(f"Creating user: {data.get('email')}")
 
-            if not role:
-                return None, "Role not found"
+        # 🔥 DEBUG
+        print("🔥 [DEBUG] CREATE USER DATA:", data)
 
-            user = User(
-                username=data.get("username"),
-                email=data.get("email"),
-                password_hash=hash_password(data.get("password")),
-                phone=data.get("phone"),
-                address=data.get("address"),
-                role_id=data.get("role_id")
-            )
+        # =====================
+        # ROLE ID EXTRACTION
+        # =====================
+        role_id = data.get("role_id")
+        print("🔥 [DEBUG] ROLE_ID:", role_id)
 
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+        # =====================
+        # ROLE CHECK
+        # =====================
+        role = db.query(Role).filter(Role.id == role_id).first()
 
-            return user, None
+        if not role:
+            print("❌ ROLE NOT FOUND FOR ID:", role_id)
+            logger.warning("Role not found during user creation")
+            return {"data": None, "error": "Role not found"}
 
-        finally:
-            db.close()
+        # =====================
+        # EMAIL CHECK
+        # =====================
+        if db.query(User).filter(User.email == data.get("email")).first():
+            logger.warning(f"Email already exists: {data.get('email')}")
+            return {"data": None, "error": "Email already exists"}
 
-    # =====================
-    # GET ALL USERS
-    # =====================
-    from sqlalchemy.orm import joinedload
-    @staticmethod
-    def get_users():
-        db = SessionLocal()
-        try:
-            users = db.query(User) \
-                .options(joinedload(User.role)) \
-                .order_by(User.id.asc()) \
-                .all()
+        # =====================
+        # CREATE USER
+        # =====================
+        user = User(
+            username=data.get("username"),
+            email=data.get("email"),
+            password_hash=hash_password(data.get("password")),
+            phone=data.get("phone"),
+            address=data.get("address"),
+            role_id=role.id,
+            is_active=True
+        )
 
-            return users
-        finally:
-            db.close()
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
-    # =====================
-    # GET BY ID
-    # =====================
-    @staticmethod
-    def get_user_by_id(user_id):
-        db = SessionLocal()
-        try:
-            user = db.query(User) \
-                .options(joinedload(User.role)) \
-                .filter(User.id == user_id) \
-                .first()
+        logger.info(f"User created successfully: {user.email}")
 
-            if not user:
-                return None, "User not found"
-
-            return user, None
-
-        finally:
-            db.close()
-    # =====================
-    # UPDATE USER
-    # =====================
-    @staticmethod
-    def update_user(user_id: int, data: dict, current_user: dict):
-
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if not user:
-                return None, "User not found"
-
-            # =====================
-            # CURRENT USER FROM TOKEN
-            # =====================
-            current_user_id = current_user.get("user_id")
-            current_user_role = (current_user.get("role") or "").lower()
-
-            # =====================
-            # ADMIN PROTECTION
-            # =====================
-            if user.role and user.role.name.lower() == "admin":
-                return None, "ADMIN user cannot be modified"
-
-            # =====================
-            # PERMISSION CHECK
-            # =====================
-            if current_user_role != "admin" and current_user_id != user_id:
-                return None, "Forbidden"
-
-            # =====================
-            # SAFE UPDATE (WHITELIST)
-            # =====================
-            allowed_fields = ["username", "email", "phone", "address"]
-
-            for key, value in data.items():
-                if key in allowed_fields:
-                    setattr(user, key, value)
-
-            # =====================
-            # PASSWORD UPDATE
-            # =====================
-            if data.get("password"):
-                user.password_hash = hash_password(data["password"])
-
-            # =====================
-            # ROLE UPDATE ONLY ADMIN
-            # =====================
-            if current_user_role == "admin" and data.get("role_id"):
-                user.role_id = data["role_id"]
-
-            db.commit()
-            db.refresh(user)
-
-            return {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email
-            }, None
-
-        finally:
-            db.close()
-
-    # =====================
-    # DELETE USER
-    # =====================
-    @staticmethod
-    def delete_user(user_id: int, current_user: dict):
-
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if not user:
-                return False, "User not found"
-
-            current_user_id = current_user.get("user_id")
-            current_user_role = (current_user.get("role") or "").lower()
-
-            # ADMIN PROTECTION
-            if user.role and user.role.name.lower() == "admin":
-                return False, "ADMIN user cannot be deleted"
-
-            # PERMISSION CHECK
-            if current_user_role != "admin" and current_user_id != user_id:
-                return False, "Forbidden"
-
-            db.delete(user)
-            db.commit()
-
-            return True, None
-
-        finally:
-            db.close()
-
-    # =====================
-    # GET ME
-    # =====================
-    @staticmethod
-    def get_me(user_id):
-
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if not user:
-                return None, "User not found"
-
-            return {
+        return {
+            "data": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
                 "phone": user.phone,
                 "address": user.address,
-                "role": user.role.name if user.role else None
-            }, None
+                "role": get_role_name(user)
+            },
+            "error": None
+        }
 
-        finally:
-            db.close()
+    # =====================
+    # GET ALL USERS
+    # =====================
+    @staticmethod
+    def get_users(db):
+
+        users = db.query(User).all()
+
+        return {
+            "data": [
+                {
+                    "id": u.id,
+                    "username": u.username,
+                    "email": u.email,
+                    "phone": u.phone,
+                    "address": u.address,
+                    "role": get_role_name(u),
+                    "is_active": u.is_active
+                }
+                for u in users
+            ],
+            "error": None
+        }
+
+    # =====================
+    # GET USER BY ID
+    # =====================
+    @staticmethod
+    def get_user_by_id(db, user_id):
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {"data": None, "error": "User not found"}
+
+        return {
+            "data": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role": get_role_name(user),
+                "is_active": user.is_active
+            },
+            "error": None
+        }
+
+    # =====================
+    # UPDATE USER
+    # =====================
+    @staticmethod
+    def update_user(db, user_id, data):
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {"data": None, "error": "User not found"}
+
+        if "email" in data:
+            existing = db.query(User).filter(User.email == data["email"]).first()
+            if existing and existing.id != user.id:
+                return {"data": None, "error": "Email already exists"}
+
+        for field in ["username", "email", "phone", "address"]:
+            if field in data:
+                setattr(user, field, data[field])
+
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "data": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role": get_role_name(user),
+                "is_active": user.is_active
+            },
+            "error": None
+        }
+
+    # =====================
+    # DELETE USER
+    # =====================
+    @staticmethod
+    def delete_user(db, user_id):
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {"data": None, "error": "User not found"}
+
+        db.delete(user)
+        db.commit()
+
+        return {
+            "data": {"message": "User deleted successfully"},
+            "error": None
+        }
+
+    # =====================
+    # GET ME
+    # =====================
+    @staticmethod
+    def get_me(db, current_user):
+
+        user_id = current_user.get("user_id")
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {"data": None, "error": "User not found"}
+
+        return {
+            "data": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "phone": user.phone,
+                "address": user.address,
+                "role": get_role_name(user)
+            },
+            "error": None
+        }
 
     # =====================
     # UPDATE ME
     # =====================
     @staticmethod
-    def update_me(user_id, data):
+    def update_me(db, current_user, data):
 
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if not user:
-                return None, "User not found"
-
-            allowed_fields = ["username", "phone", "address"]
-
-            for key, value in data.items():
-                if key in allowed_fields:
-                    setattr(user, key, value)
-
-            if data.get("password"):
-                user.password_hash = hash_password(data["password"])
-
-            db.commit()
-            db.refresh(user)
-
-            return {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "phone": user.phone,
-                "address": user.address
-            }, None
-
-        finally:
-            db.close()
+        return UserService.update_user(db, current_user.get("user_id"), data)
 
     # =====================
     # DELETE ME
     # =====================
     @staticmethod
-    def delete_me(user_id):
+    def delete_me(db, current_user):
 
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
-
-            if not user:
-                return False, "User not found"
-
-            db.delete(user)
-            db.commit()
-
-            return True, None
-
-        finally:
-            db.close()
+        return UserService.delete_user(db, current_user.get("user_id"))

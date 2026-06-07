@@ -1,75 +1,73 @@
-from flask import jsonify
+from flask import jsonify, request
+from app.core.db import SessionLocal
 from app.modules.roles.service import RoleService
 
 
 class RoleController:
 
-    # =====================
-    # CREATE
-    # =====================
     @staticmethod
-    def create(data):
+    def create_role():
+        db = SessionLocal()
+        try:
+            data = request.get_json() or {}
+            result = RoleService.create_role(db, data.get("name"))
 
-        role, error = RoleService.create_role(data.get("name"))
+            if result.get("error"):
+                return jsonify(result), 400
 
-        if error:
-            return jsonify({"message": error}), 400
+            return jsonify(result), 201
 
-        return jsonify(role), 201
+        finally:
+            db.close()
 
-
-    # =====================
-    # GET ALL
-    # =====================
     @staticmethod
     def get_all():
+        db = SessionLocal()
+        try:
+            result = RoleService.get_roles(db)
+            return jsonify(result), 200
+        finally:
+            db.close()
 
-        roles = RoleService.get_roles()
-
-        return jsonify(roles), 200
-
-
-    # =====================
-    # GET ONE
-    # =====================
     @staticmethod
     def get_one(role_id):
+        db = SessionLocal()
+        try:
+            result = RoleService.get_role_by_id(db, role_id)
 
-        role, error = RoleService.get_role_by_id(role_id)
+            if result.get("error"):
+                return jsonify(result), 404
 
-        if error:
-            return jsonify({"message": error}), 404
+            return jsonify(result), 200
 
-        return jsonify(role), 200
+        finally:
+            db.close()
 
-
-    # =====================
-    # UPDATE
-    # =====================
     @staticmethod
-    def update(role_id, data):
+    def update(role_id):
+        db = SessionLocal()
+        try:
+            data = request.get_json() or {}
+            result = RoleService.update_role(db, role_id, data)
 
-        role, error = RoleService.update_role(role_id, data.get("name"))
+            if result.get("error"):
+                return jsonify(result), 400
 
-        if error:
-            return jsonify({"message": error}), 400
+            return jsonify(result), 200
 
-        return jsonify(role), 200
+        finally:
+            db.close()
 
-
-    # =====================
-    # DELETE
-    # =====================
     @staticmethod
     def delete(role_id):
+        db = SessionLocal()
+        try:
+            result = RoleService.delete_role(db, role_id)
 
-        success, error = RoleService.delete_role(role_id)
+            if result.get("error"):
+                return jsonify(result), 404
 
-        if not success:
-            return jsonify({"message": error}), 403
+            return jsonify(result), 200
 
-        return jsonify({"message": "Role deleted"}), 200
-
-
-
-
+        finally:
+            db.close()

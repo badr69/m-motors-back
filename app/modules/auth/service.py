@@ -1,4 +1,3 @@
-from app.core.db import SessionLocal
 from app.modules.users.model import User
 from app.modules.roles.model import Role
 from app.core.security.password import verify_password, hash_password
@@ -15,154 +14,140 @@ class AuthService:
     # LOGIN
     # =====================
     @staticmethod
-    def login(email, password):
+    def login(db, email, password):
 
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.email == email).first()
-            print("USER:", user)
-            print("ROLE:", user.role)
-            print("ROLE NAME:", getattr(user.role, "name", None))
+        if not email or not password:
+            return {"data": None, "error": "Email and password required"}
 
-            if not user:
-                return None, "User not found"
+        user = db.query(User).filter(User.email == email).first()
 
-            if hasattr(user, "is_active") and user.is_active is False:
-                return None, "Account disabled"
+        if not user:
+            return {"data": None, "error": "User not found"}
 
-            if not verify_password(password, user.password_hash):
-                return None, "Invalid password"
+        if not user.is_active:
+            return {"data": None, "error": "Account disabled"}
 
-            role_name = user.role.name.upper() if user.role else "CLIENT"
+        if not verify_password(password, user.password_hash):
+            return {"data": None, "error": "Invalid password"}
 
-            return {
-                "access_token": generate_access_token(user),
-                "refresh_token": generate_refresh_token(user),
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "role": role_name
-                }
-            }, None
-
-        finally:
-            db.close()
+        return AuthService._build_auth_response(user)
 
     # =====================
     # REGISTER
     # =====================
     @staticmethod
-    def register(data):
+    def register(db, data):
 
-        db = SessionLocal()
-        try:
-            if db.query(User).filter(User.email == data.get("email")).first():
-                return None, "Email already exists"
+        email = data.get("email")
+        username = data.get("username")
+        password = data.get("password")
 
-            if db.query(User).filter(User.username == data.get("username")).first():
-                return None, "Username already exists"
+        if not email or not username or not password:
+            return {"data": None, "error": "Missing required fields"}
 
-            role = db.query(Role).filter(Role.name == "CLIENT").first()
+        if db.query(User).filter(User.email == email).first():
+            return {"data": None, "error": "Email already exists"}
 
-            if not role:
-                return None, "CLIENT role not found"
+        if db.query(User).filter(User.username == username).first():
+            return {"data": None, "error": "Username already exists"}
 
-            user = User(
-                username=data.get("username"),
-                email=data.get("email"),
-                phone=data.get("phone"),
-                address=data.get("address"),
-                password_hash=hash_password(data.get("password")),
-                role_id=role.id
-            )
+        role = db.query(Role).filter(Role.name == "CLIENT").first()
 
-            db.add(user)
-            db.commit()
-            db.refresh(user)
+        if not role:
+            return {"data": None, "error": "CLIENT role not found"}
 
-            return {
-                "message": "Register successful",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "phone": user.phone,
-                    "address": user.address,
-                    "role": role.name.upper()
-                }
-            }, None
+        user = User(
+            username=username,
+            email=email,
+            phone=data.get("phone"),
+            address=data.get("address"),
+            password_hash=hash_password(password),
+            role_id=role.id,
+            is_active=True
+        )
 
-        finally:
-            db.close()
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return AuthService._build_auth_response(user, role.name)
 
     # =====================
     # CURRENT USER
     # =====================
     @staticmethod
-    def current_user(user_id):
+    def current_user(db, user_id):
 
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id).first()
 
-            if not user:
-                return None, "User not found"
+        if not user:
+            return {"data": None, "error": "User not found"}
 
-            role_name = user.role.name.upper() if user.role else "CLIENT"
-
-            return {
+        return {
+            "data": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
                 "phone": user.phone,
                 "address": user.address,
-                "role": role_name
-            }, None
-
-        finally:
-            db.close()
+                "role": user.role.name.upper() if user.role else "CLIENT"
+            },
+            "error": None
+        }
 
     # =====================
     # REFRESH TOKEN
     # =====================
     @staticmethod
-    def refresh_token(auth_header):
+    def refresh_token(db, token):
 
-        if not auth_header:
-            return None, "Token missing"
+        if not token:
+            return {"data": None, "error": "Token missing"}
 
-        try:
-            token = auth_header.split(" ")[1]
-            payload = decode_token(token)
+        payload = decode_token(token, expected_type="refresh")
 
-            if payload.get("type") != "refresh":
-                return None, "Invalid token type"
+        if not payload:
+            return {"data": None, "error": "Invalid refresh token"}
 
-            user_id = payload.get("user_id")
+        user_id = payload.get("user_id")
 
-            db = SessionLocal()
-            try:
-                user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id).first()
 
-                if not user:
-                    return None, "User not found"
+        if not user:
+            return {"data": None, "error": "User not found"}
 
-                return {
-                    "access_token": generate_access_token(user)
-                }, None
-
-            finally:
-                db.close()
-
-        except Exception:
-            return None, "Invalid or expired token"
+        return {
+            "data": {
+                "access_token": generate_access_token(user)
+            },
+            "error": None
+        }
 
     # =====================
     # LOGOUT
     # =====================
     @staticmethod
     def logout():
+        return {"data": {"message": "Logged out successfully"}, "error": None}
+
+    # =====================
+    # PRIVATE
+    # =====================
+    @staticmethod
+    def _build_auth_response(user, role_name=None):
+
+        role = role_name or (user.role.name if user.role else "CLIENT")
+
         return {
-            "message": "Logged out successfully"
-        }, None
+            "data": {
+                "access_token": generate_access_token(user),
+                "refresh_token": generate_refresh_token(user),
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": role.upper()
+                }
+            },
+            "error": None
+        }

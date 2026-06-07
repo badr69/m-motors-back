@@ -1,6 +1,7 @@
-from flask import request, jsonify
+from flask import jsonify, request
+from typing import Dict, Any
+from app.core.db import SessionLocal
 from app.modules.users.service import UserService
-from app.core.security.jwt_middleware import jwt_required
 
 
 class UserController:
@@ -9,150 +10,173 @@ class UserController:
     # CREATE USER
     # =====================
     @staticmethod
-    @jwt_required
     def create_user():
 
-        data = request.get_json() or {}
+        db = SessionLocal()
+        try:
+            data: Dict[str, Any] = request.get_json() or {}
+            print("🔥 [DEBUG] CREATE USER REQUEST DATA:", data)
 
-        result, error = UserService.create_user(data)
+            result = UserService.create_user(db, data)
 
-        if error:
-            return jsonify({"message": error}), 400
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 400
 
-        return jsonify({
-            "message": "User created successfully",
-            "user": {
-                "id": result.id,
-                "username": result.username,
-                "email": result.email,
-                "role": result.role.name if result.role else None
-            }
-        }), 201
+            return jsonify({
+                "message": "User created successfully",
+                "data": result["data"]
+            }), 201
+
+        finally:
+            db.close()
 
     # =====================
     # GET ALL USERS
     # =====================
     @staticmethod
-    @jwt_required
     def get_users():
 
-        users = UserService.get_users()
+        db = SessionLocal()
+        try:
+            result = UserService.get_users(db)
 
-        data = [
-            {
-                "id": u.id,
-                "username": u.username,
-                "email": u.email,
-                "phone": u.phone,
-                "address": u.address,
-                "role": u.role.name if u.role else None
-            }
-            for u in users
-        ]
+            return jsonify({
+                "message": "Users retrieved successfully",
+                "data": result["data"]
+            }), 200
 
-        return jsonify(data), 200
+        finally:
+            db.close()
 
     # =====================
     # GET USER BY ID
     # =====================
     @staticmethod
-    @jwt_required
-    def get_user(user_id):
+    def get_user_by_id(user_id):
 
-        user, error = UserService.get_user_by_id(user_id)
+        db = SessionLocal()
+        try:
+            result = UserService.get_user_by_id(db, user_id)
 
-        if error:
-            return jsonify({"message": error}), 404
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 404
 
-        return jsonify({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "phone": user.phone,
-            "address": user.address,
-            "role": user.role.name if user.role else None,
-            "role_id": user.role_id
-        }), 200
+            return jsonify({
+                "message": "User retrieved successfully",
+                "data": result["data"]
+            }), 200
+
+        finally:
+            db.close()
 
     # =====================
     # UPDATE USER
     # =====================
     @staticmethod
-    @jwt_required
     def update_user(user_id):
 
-        data = request.get_json() or {}
-        current_user = request.current_user
+        db = SessionLocal()
+        try:
+            data: Dict[str, Any] = request.get_json() or {}
 
-        result, error = UserService.update_user(user_id, data, current_user)
+            result = UserService.update_user(db, user_id, data)
 
-        if error:
-            return jsonify({"message": error}), 403
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 400
 
-        return jsonify(result), 200
+            return jsonify({
+                "message": "User updated successfully",
+                "data": result["data"]
+            }), 200
+
+        finally:
+            db.close()
 
     # =====================
     # DELETE USER
     # =====================
     @staticmethod
-    @jwt_required
     def delete_user(user_id):
 
-        current_user = request.current_user
+        db = SessionLocal()
+        try:
+            result = UserService.delete_user(db, user_id)
 
-        success, error = UserService.delete_user(user_id, current_user)
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 404
 
-        if error:
-            return jsonify({"message": error}), 403
+            return jsonify({
+                "message": result["data"]["message"]
+            }), 200
 
-        return jsonify({"message": "User deleted successfully"}), 200
+        finally:
+            db.close()
 
     # =====================
-    # ME
+    # GET ME
     # =====================
     @staticmethod
-    @jwt_required
     def get_me():
 
-        user_id = request.current_user["user_id"]
+        db = SessionLocal()
+        try:
+            current_user: Dict[str, Any] = getattr(request, "current_user", {}) or {}
 
-        result, error = UserService.get_me(user_id)
+            result = UserService.get_me(db, current_user)
 
-        if error:
-            return jsonify({"message": error}), 404
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 404
 
-        return jsonify(result), 200
+            return jsonify({
+                "message": "Current user retrieved successfully",
+                "data": result["data"]
+            }), 200
+
+        finally:
+            db.close()
 
     # =====================
     # UPDATE ME
     # =====================
     @staticmethod
-    @jwt_required
     def update_me():
 
-        user_id = request.current_user["user_id"]
-        data = request.get_json() or {}
+        db = SessionLocal()
+        try:
+            current_user: Dict[str, Any] = getattr(request, "current_user", {}) or {}
+            data: Dict[str, Any] = request.get_json() or {}
 
-        result, error = UserService.update_me(user_id, data)
+            result = UserService.update_me(db, current_user, data)
 
-        if error:
-            return jsonify({"message": error}), 400
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 400
 
-        return jsonify(result), 200
+            return jsonify({
+                "message": "User updated successfully",
+                "data": result["data"]
+            }), 200
+
+        finally:
+            db.close()
 
     # =====================
     # DELETE ME
     # =====================
     @staticmethod
-    @jwt_required
     def delete_me():
 
-        user_id = request.current_user["user_id"]
+        db = SessionLocal()
+        try:
+            current_user: Dict[str, Any] = getattr(request, "current_user", {}) or {}
 
-        success, error = UserService.delete_me(user_id)
+            result = UserService.delete_me(db, current_user)
 
-        if error:
-            return jsonify({"message": error}), 400
+            if result.get("error"):
+                return jsonify({"message": result["error"]}), 404
 
-        return jsonify({"message": "Account deleted successfully"}), 200
+            return jsonify({
+                "message": result["data"]["message"]
+            }), 200
 
+        finally:
+            db.close()
