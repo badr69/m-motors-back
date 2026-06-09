@@ -1,7 +1,13 @@
+import os
+import uuid
+from werkzeug.utils import secure_filename
 from app.modules.vehicles.model import Vehicle
 from app.core.logger import setup_logger
 
+
+
 logger = setup_logger("vehicle-service")
+
 
 
 class VehicleService:
@@ -210,32 +216,6 @@ class VehicleService:
             },
             "error": None
         }
-    # @staticmethod
-    # def delete_vehicle(db, vehicle_id):
-    #
-    #     vehicle = db.query(Vehicle).filter(
-    #         Vehicle.id == vehicle_id
-    #     ).first()
-    #
-    #     if not vehicle:
-    #         return {
-    #             "data": None,
-    #             "error": "Vehicle not found"
-    #         }
-    #
-    #     # soft delete
-    #     vehicle.is_deleted = True
-    #
-    #     db.commit()
-    #
-    #     logger.info(f"Vehicle deleted successfully: {vehicle.id}")
-    #
-    #     return {
-    #         "data": {
-    #             "message": "Vehicle deleted successfully"
-    #         },
-    #         "error": None
-    #     }
 
     # =====================
     # GET AVAILABLE VEHICLES
@@ -388,5 +368,163 @@ class VehicleService:
                 )
             },
 
+            "error": None
+        }
+
+    @staticmethod
+    def upload_vehicle_image(db, vehicle_id, file):
+
+        logger.info(f"Uploading image for vehicle: {vehicle_id}")
+
+        # =====================
+        # GET VEHICLE
+        # =====================
+        vehicle = db.query(Vehicle).filter(
+            Vehicle.id == vehicle_id,
+            Vehicle.is_deleted == False
+        ).first()
+
+        if not vehicle:
+            return {
+                "data": None,
+                "error": "Vehicle not found"
+            }
+
+        # =====================
+        # CHECK FILE
+        # =====================
+        if not file or file.filename == "":
+            return {
+                "data": None,
+                "error": "Invalid file"
+            }
+
+        # =====================
+        # UPLOAD FOLDER
+        # =====================
+        upload_folder = "uploads"
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # =====================
+        # SECURE + UNIQUE NAME
+        # =====================
+        original_name = secure_filename(file.filename)
+        unique_name = f"{uuid.uuid4().hex}_{original_name}"
+
+        filepath = os.path.join(upload_folder, unique_name)
+
+        # =====================
+        # SAVE FILE
+        # =====================
+        file.save(filepath)
+
+        # =====================
+        # UPDATE VEHICLE
+        # =====================
+        vehicle.image_url = f"/uploads/{unique_name}"
+
+        db.commit()
+        db.refresh(vehicle)
+
+        logger.info(f"Image uploaded successfully for vehicle: {vehicle_id}")
+
+        return {
+            "data": {
+                "message": "Image uploaded successfully",
+                "image_url": vehicle.image_url
+            },
+            "error": None
+        }
+
+    @staticmethod
+    def update_vehicle_image(db, vehicle_id, file):
+
+        vehicle = db.query(Vehicle).filter(
+            Vehicle.id == vehicle_id,
+            Vehicle.is_deleted == False
+        ).first()
+
+        if not vehicle:
+            return {
+                "data": None,
+                "error": "Vehicle not found"
+            }
+
+        if not file or file.filename == "":
+            return {
+                "data": None,
+                "error": "Invalid file"
+            }
+
+        upload_folder = "uploads"
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # =====================
+        # DELETE OLD IMAGE (OPTIONAL)
+        # =====================
+        if vehicle.image_url:
+            old_path = vehicle.image_url.replace("/uploads/", "uploads/")
+            if os.path.exists(old_path):
+                os.remove(old_path)
+
+        # =====================
+        # SAVE NEW IMAGE
+        # =====================
+        original_name = secure_filename(file.filename)
+        unique_name = f"{uuid.uuid4().hex}_{original_name}"
+
+        filepath = os.path.join(upload_folder, unique_name)
+        file.save(filepath)
+
+        # =====================
+        # UPDATE DB
+        # =====================
+        vehicle.image_url = f"/uploads/{unique_name}"
+
+        db.commit()
+        db.refresh(vehicle)
+
+        return {
+            "data": {
+                "message": "Image updated successfully",
+                "image_url": vehicle.image_url
+            },
+            "error": None
+        }
+
+    @staticmethod
+    def delete_vehicle_image(db, vehicle_id):
+
+        vehicle = db.query(Vehicle).filter(
+            Vehicle.id == vehicle_id,
+            Vehicle.is_deleted == False
+        ).first()
+
+        if not vehicle:
+            return {
+                "data": None,
+                "error": "Vehicle not found"
+            }
+
+        # =====================
+        # DELETE FILE FROM VPS
+        # =====================
+        if vehicle.image_url:
+            file_path = vehicle.image_url.replace("/uploads/", "uploads/")
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # =====================
+        # UPDATE DB
+        # =====================
+        vehicle.image_url = None
+
+        db.commit()
+
+        return {
+            "data": {
+                "message": "Image deleted successfully"
+            },
             "error": None
         }

@@ -197,3 +197,5 @@ def test_delete_me(db_session, user_role):
 
     assert result["error"] is None
     assert result["data"]["message"] == "User deleted successfully"
+
+

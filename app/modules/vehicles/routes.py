@@ -45,3 +45,24 @@ def update_vehicle(vehicle_id):
 @require_role("ADMIN")
 def delete_vehicle(vehicle_id):
     return VehicleController.delete_vehicle(vehicle_id)
+
+
+@vehicle_bp.route("/<int:vehicle_id>/upload-image", methods=["POST"])
+@jwt_required
+@require_role("ADMIN")
+def upload_vehicle_image(vehicle_id):
+    return VehicleController.upload_vehicle_image(vehicle_id)
+
+
+@vehicle_bp.route("/<int:vehicle_id>/image", methods=["PUT"])
+@jwt_required
+@require_role("ADMIN")
+def update_vehicle_image(vehicle_id):
+    return VehicleController.update_vehicle_image(vehicle_id)
+
+
+@vehicle_bp.route("/<int:vehicle_id>/image", methods=["DELETE"])
+@jwt_required
+@require_role("ADMIN")
+def delete_vehicle_image(vehicle_id):
+    return VehicleController.delete_vehicle_image(vehicle_id)

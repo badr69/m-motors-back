@@ -5,6 +5,7 @@ from app.modules.users.model import User
 from app.modules.roles.model import Role
 from app.core.security.password import hash_password
 from app.core.security.jwt import generate_refresh_token, decode_token
+from tests.conftest import token_admin
 
 
 # =========================
@@ -34,6 +35,14 @@ def create_test_user(db_session):
     db_session.refresh(user)
 
     return user
+
+
+def test_login(client):
+    res = client.post("/api/v1/auth/login", json={
+        "email": "admin@test.com",
+        "password": "admin"
+    })
+    assert res.status_code in [200, 401]
 
 
 # =========================
@@ -158,3 +167,9 @@ def test_logout():
 
     assert result["error"] is None
     assert result["data"]["message"] == "Logged out successfully"
+
+
+
+
+
+

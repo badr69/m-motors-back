@@ -3,6 +3,8 @@ from app.core.db import SessionLocal
 from app.modules.vehicles.service import VehicleService
 
 
+
+
 class VehicleController:
 
     # =====================
@@ -150,3 +152,59 @@ class VehicleController:
 
         finally:
             db.close()
+
+
+    @staticmethod
+    def upload_vehicle_image(vehicle_id):
+
+        db = SessionLocal()
+
+        try:
+            file = request.files.get("image")
+
+            result = VehicleService.upload_vehicle_image(db, vehicle_id, file)
+
+            if result["error"]:
+                return jsonify({"message": result["error"]}), 400
+
+            return jsonify(result["data"]), 200
+
+        finally:
+            db.close()
+
+
+    @staticmethod
+    def update_vehicle_image(vehicle_id):
+
+        db = SessionLocal()
+
+        try:
+            file = request.files.get("image")
+
+            result = VehicleService.update_vehicle_image(db, vehicle_id, file)
+
+            if result["error"]:
+                return jsonify({"message": result["error"]}), 400
+
+            return jsonify(result["data"]), 200
+
+        finally:
+            db.close()
+
+    @staticmethod
+    def delete_vehicle_image(vehicle_id):
+
+        db = SessionLocal()
+
+        try:
+            result = VehicleService.delete_vehicle_image(db, vehicle_id)
+
+            if result["error"]:
+                return jsonify({"message": result["error"]}), 404
+
+            return jsonify(result["data"]), 200
+
+        finally:
+            db.close()
+
+
