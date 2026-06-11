@@ -1,7 +1,7 @@
 def test_update_status(client, token_admin, dossier):
 
     response = client.patch(
-        f"/api/v1/rental_dossiers/{dossier.id}",
+        f"/api/v1/rental_dossiers/{dossier['id']}",
         json={
             "status": "approved"
         },

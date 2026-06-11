@@ -9,6 +9,7 @@ def test_get_my_dossiers(client, token_user):
 
     assert response.status_code == 200
 
-    data = response.get_json()["data"]
+    json_data = response.get_json()
 
-    assert isinstance(data, list)
+    assert "data" in json_data
+    assert isinstance(json_data["data"], list)

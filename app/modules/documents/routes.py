@@ -3,10 +3,12 @@ from app.modules.documents.controller import DocumentController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
+
 documents_bp = Blueprint("documents", __name__)
 
+
 # =====================
-# PUBLIC / AUTH USER
+# AUTH USER
 # =====================
 
 @documents_bp.route("", methods=["POST"])

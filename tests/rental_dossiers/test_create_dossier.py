@@ -17,3 +17,4 @@ def test_create_dossier(client, token_user, vehicle):
 
     assert data["status"] == "pending"
     assert data["vehicle_id"] == vehicle.id
+    assert "id" in data
