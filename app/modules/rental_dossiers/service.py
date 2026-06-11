@@ -80,16 +80,30 @@ class RentalDossierService:
             "data": [
                 {
                     "id": d.id,
-                    "user_id": d.user_id,
-                    "vehicle_id": d.vehicle_id,
                     "status": d.status,
                     "message": d.message,
-                    "created_at": d.created_at
+                    "created_at": d.created_at,
+
+                    # EPIC 6 FRONT REQUIREMENT
+                    "vehicle": {
+                        "id": d.vehicle.id,
+                        "brand": d.vehicle.brand,
+                        "model": d.vehicle.model
+                    } if d.vehicle else None,
+
+                    "documents": [
+                        {
+                            "id": doc.id,
+                            "filename": doc.filename
+                        }
+                        for doc in d.documents
+                    ]
                 }
                 for d in dossiers
             ],
             "error": None
         }
+
 
     # =====================
     # GET ALL DOSSIERS (ADMIN)
@@ -113,6 +127,7 @@ class RentalDossierService:
             ],
             "error": None
         }
+
 
     # =====================
     # GET BY ID
@@ -142,14 +157,29 @@ class RentalDossierService:
         return {
             "data": {
                 "id": dossier.id,
-                "user_id": dossier.user_id,
-                "vehicle_id": dossier.vehicle_id,
                 "status": dossier.status,
                 "message": dossier.message,
-                "created_at": dossier.created_at
+                "created_at": dossier.created_at,
+
+                # EPIC 6 IMPORTANT
+                "vehicle": {
+                    "id": dossier.vehicle.id,
+                    "brand": dossier.vehicle.brand,
+                    "model": dossier.vehicle.model
+                } if dossier.vehicle else None,
+
+                "documents": [
+                    {
+                        "id": doc.id,
+                        "filename": doc.filename,
+                        "filepath": doc.filepath
+                    }
+                    for doc in dossier.documents
+                ]
             },
             "error": None
         }
+
 
     # =====================
     # UPDATE STATUS (ADMIN)

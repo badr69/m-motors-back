@@ -40,7 +40,6 @@ class RentalDossierController:
     # =====================
     @staticmethod
     def get_my_dossiers():
-
         db = SessionLocal()
 
         try:
@@ -48,10 +47,7 @@ class RentalDossierController:
 
             result = RentalDossierService.get_my_dossiers(db, user_id)
 
-            return jsonify({
-                "message": "My dossiers retrieved successfully",
-                "data": result["data"]
-            }), 200
+            return jsonify(result), 200
 
         finally:
             db.close()
