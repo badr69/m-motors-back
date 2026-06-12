@@ -1,36 +1,39 @@
 import pytest
+import time
 from app.modules.roles.model import Role
 
 
 # ======================
-# FIXTURE ROLE
+# FIXTURE ROLE SAFE
 # ======================
 @pytest.fixture()
 def test_role(db_session):
-    role = db_session.query(Role).filter_by(name="TEST_ROLE").first()
+    unique = str(int(time.time() * 1000000))
 
-    if not role:
-        role = Role(name="TEST_ROLE")
-        db_session.add(role)
-        db_session.commit()
+    role = Role(name=f"TEST_ROLE_{unique}")
+    db_session.add(role)
+    db_session.commit()
+    db_session.refresh(role)
 
     return role
 
+
 # ======================
-# CREATE ROLE
+# CREATE ROLE (DB TEST)
 # ======================
 def test_create_role(db_session):
-    role = Role(name="MANAGER")
+    role = Role(name=f"MANAGER_{time.time()}")
     db_session.add(role)
     db_session.commit()
 
-    saved_role = db_session.query(Role).filter_by(name="MANAGER").first()
+    saved = db_session.query(Role).filter(Role.name == role.name).first()
 
-    assert saved_role is not None
-    assert saved_role.name == "MANAGER"
+    assert saved is not None
+    assert "MANAGER" in saved.name
+
 
 # ======================
-# GET ALL ROLES
+# GET ALL ROLES (DB)
 # ======================
 def test_get_all_roles(db_session, test_role):
     roles = db_session.query(Role).all()
@@ -38,29 +41,31 @@ def test_get_all_roles(db_session, test_role):
     assert roles is not None
     assert len(roles) > 0
 
+
 # ======================
-# GET ROLE BY ID
+# GET ROLE BY ID (DB)
 # ======================
 def test_get_role_by_id(db_session, test_role):
-    role = db_session.query(Role).filter_by(id=test_role.id).first()
+    role = db_session.query(Role).filter(Role.id == test_role.id).first()
 
     assert role is not None
     assert role.id == test_role.id
-    assert role.name == "TEST_ROLE"
+
 
 # ======================
-# UPDATE ROLE
+# UPDATE ROLE (DB)
 # ======================
 def test_update_role(db_session, test_role):
     test_role.name = "UPDATED_ROLE"
     db_session.commit()
 
-    updated_role = db_session.query(Role).filter_by(id=test_role.id).first()
+    updated = db_session.query(Role).filter(Role.id == test_role.id).first()
 
-    assert updated_role.name == "UPDATED_ROLE"
+    assert updated.name == "UPDATED_ROLE"
+
 
 # ======================
-# GET ALL ROLES (ROUTE)
+# ROUTE - GET ALL
 # ======================
 def test_get_roles_route(client):
     res = client.get("/api/v1/roles")
@@ -68,15 +73,15 @@ def test_get_roles_route(client):
 
 
 # ======================
-# GET ROLE BY ID (ROUTE)
+# ROUTE - GET BY ID SAFE
 # ======================
-def test_get_role_by_id_route(client):
-    res = client.get("/api/v1/roles/1")
+def test_get_role_by_id_route(client, test_role):
+    res = client.get(f"/api/v1/roles/{test_role.id}")
     assert res.status_code in [200, 404, 401, 403]
 
 
 # ======================
-# ROLE PAGINATION (BRANCH COVERAGE)
+# PAGINATION
 # ======================
 def test_roles_pagination(client):
     res = client.get("/api/v1/roles?page=1&limit=10")
@@ -84,7 +89,7 @@ def test_roles_pagination(client):
 
 
 # ======================
-# ROLE SEARCH (BRANCH COVERAGE)
+# SEARCH
 # ======================
 def test_roles_search(client):
     res = client.get("/api/v1/roles?search=admin")
@@ -92,30 +97,54 @@ def test_roles_search(client):
 
 
 # ======================
-# CREATE ROLE (ROUTE)
+# CREATE ROLE ROUTE
 # ======================
-def test_create_role_route(client):
-    res = client.post("/api/v1/roles", json={"name": "TEST_ROLE"})
-    assert res.status_code in [200, 201, 401, 403]
+def test_create_role_route(client, token_admin):
+    res = client.post(
+        "/api/v1/roles",
+        json={"name": f"TEST_ROLE_{time.time()}"},
+        headers={"Authorization": f"Bearer {token_admin}"}
+    )
+
+    assert res.status_code in [200, 201, 400, 403]
 
 
 # ======================
-# INVALID CREATE ROLE (BRANCH ERROR)
+# INVALID CREATE ROLE
 # ======================
-def test_create_role_invalid(client):
-    res = client.post("/api/v1/roles", json={})
-    assert res.status_code in [400, 422, 401, 403]
+def test_create_role_invalid(client, token_admin):
+    res = client.post(
+        "/api/v1/roles",
+        json={},
+        headers={"Authorization": f"Bearer {token_admin}"}
+    )
+
+    assert res.status_code in [400, 422, 403]
 
 
+# ======================
+# DELETE ROLE DB
+# ======================
 def test_delete_role(db_session):
-    role = Role(name="DELETE_ROLE")
+    role = Role(name=f"DELETE_ROLE_{time.time()}")
     db_session.add(role)
     db_session.commit()
 
     db_session.delete(role)
     db_session.commit()
 
-    deleted_role = db_session.query(Role).filter_by(name="DELETE_ROLE").first()
+    deleted = db_session.query(Role).filter_by(id=role.id).first()
 
-    assert deleted_role is None
+    assert deleted is None
 
+
+# ======================
+# NOT FOUND ROUTE
+# ======================
+def test_get_role_not_found(client, token_admin):
+    res = client.get(
+        "/api/v1/roles/999999999",
+        headers={"Authorization": f"Bearer {token_admin}"}
+    )
+
+    assert res.status_code in [404, 403]

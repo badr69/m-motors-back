@@ -16,6 +16,7 @@ def login():
 def register():
     return AuthController.register()
 
+
 # =====================
 # PROTECTED ROUTES
 # =====================

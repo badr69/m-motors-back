@@ -23,8 +23,13 @@ def get_roles():
 @jwt_required
 @require_role("ADMIN")
 def create_role():
-    data = request.get_json() or {}
-    return RoleController.create_role(data)
+    return RoleController.create_role()
+# @role_bp.route("", methods=["POST"])
+# @jwt_required
+# @require_role("ADMIN")
+# def create_role():
+#     data = request.get_json() or {}
+#     return RoleController.create_role(data)
 
 
 # =====================

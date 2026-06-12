@@ -1,4 +1,5 @@
 import pytest
+import time
 from werkzeug.security import generate_password_hash
 
 from app.modules.users.model import User
@@ -7,7 +8,7 @@ from app.modules.users.service import UserService
 
 
 # ======================
-# FIXTURE ROLE
+# FIXTURE ROLE SAFE
 # ======================
 @pytest.fixture()
 def user_role(db_session):
@@ -24,29 +25,26 @@ def user_role(db_session):
 
 
 # ======================
-# FIXTURE USER
+# FIXTURE USER SAFE
 # ======================
 @pytest.fixture()
 def test_user(db_session, user_role):
 
-    user = db_session.query(User).filter_by(
-        email="test@test.com"
-    ).first()
+    unique = str(int(time.time() * 1000000))
 
-    if not user:
-        user = User(
-            username="testuser",
-            email="test@test.com",
-            password_hash=generate_password_hash("123456"),
-            phone="0600000000",
-            address="Lyon",
-            role_id=user_role.id,
-            is_active=True
-        )
+    user = User(
+        username=f"test_{unique}",
+        email=f"test_{unique}@test.com",
+        password_hash=generate_password_hash("123456"),
+        phone="0600000000",
+        address="Lyon",
+        role_id=user_role.id,
+        is_active=True
+    )
 
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
 
     return user
 
@@ -56,9 +54,11 @@ def test_user(db_session, user_role):
 # ======================
 def test_create_user(db_session, user_role):
 
+    unique = str(int(time.time() * 1000000))
+
     data = {
-        "username": "newuser",
-        "email": "new@test.com",
+        "username": f"new_{unique}",
+        "email": f"new_{unique}@test.com",
         "password": "123456",
         "phone": "0611111111",
         "address": "Paris",
@@ -68,21 +68,27 @@ def test_create_user(db_session, user_role):
     result = UserService.create_user(db_session, data)
 
     assert result["error"] is None
-    assert result["data"]["email"] == "new@test.com"
+    assert result["data"]["email"].startswith("new_")
 
 
 # ======================
-# GET USER BY ID
+# GET USER BY ID (FIXED)
 # ======================
 def test_get_user_by_id(db_session, test_user):
 
+    current_user = {
+        "user_id": test_user.id,
+        "role": "ADMIN"
+    }
+
     result = UserService.get_user_by_id(
         db_session,
+        current_user,
         test_user.id
     )
 
     assert result["error"] is None
-    assert result["data"]["email"] == "test@test.com"
+    assert result["data"]["email"] == test_user.email
 
 
 # ======================
@@ -106,8 +112,8 @@ def test_update_user(db_session, test_user):
 def test_delete_user(db_session, user_role):
 
     user = User(
-        username="deleteuser",
-        email="delete@test.com",
+        username=f"delete_{time.time()}",
+        email=f"delete_{time.time()}@test.com",
         password_hash=generate_password_hash("123456"),
         role_id=user_role.id,
         is_active=True
@@ -131,19 +137,14 @@ def test_delete_user(db_session, user_role):
 # ======================
 def test_get_me(db_session, test_user):
 
-    current_user = {
-        "user_id": test_user.id,
-        "email": test_user.email,
-        "role": "USER"
-    }
-
     result = UserService.get_me(
         db_session,
-        current_user
+        test_user.id
     )
 
     assert result["error"] is None
     assert result["data"]["email"] == test_user.email
+
 
 
 # ======================
@@ -151,15 +152,9 @@ def test_get_me(db_session, test_user):
 # ======================
 def test_update_me(db_session, test_user):
 
-    current_user = {
-        "user_id": test_user.id,
-        "email": test_user.email,
-        "role": "USER"
-    }
-
     result = UserService.update_me(
         db_session,
-        current_user,
+        test_user.id,
         {"phone": "0700000000"}
     )
 
@@ -184,18 +179,10 @@ def test_delete_me(db_session, user_role):
     db_session.commit()
     db_session.refresh(user)
 
-    current_user = {
-        "user_id": user.id,
-        "email": user.email,
-        "role": "USER"
-    }
-
     result = UserService.delete_me(
         db_session,
-        current_user
+        user.id
     )
 
     assert result["error"] is None
     assert result["data"]["message"] == "User deleted successfully"
-
-

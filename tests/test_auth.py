@@ -1,11 +1,11 @@
 import time
+import pytest
 
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
 from app.modules.roles.model import Role
 from app.core.security.password import hash_password
-from app.core.security.jwt import generate_refresh_token, decode_token
-from tests.conftest import token_admin
+from app.core.security.jwt import generate_refresh_token
 
 
 # =========================
@@ -37,11 +37,15 @@ def create_test_user(db_session):
     return user
 
 
+# =========================
+# BASIC LOGIN ROUTE TEST
+# =========================
 def test_login(client):
     res = client.post("/api/v1/auth/login", json={
         "email": "admin@test.com",
         "password": "admin"
     })
+
     assert res.status_code in [200, 401]
 
 
@@ -78,12 +82,34 @@ def test_login_user_not_found(db_session):
 
 
 # =========================
+# LOGIN EMPTY EMAIL
+# =========================
+def test_login_empty_email(db_session):
+    result = AuthService.login(db_session, "", "123456")
+
+    assert result["error"] == "Email and password required"
+
+
+# =========================
+# LOGIN EMPTY PASSWORD
+# =========================
+def test_login_empty_password(db_session):
+    user = create_test_user(db_session)
+
+    result = AuthService.login(db_session, user.email, "")
+
+    assert result["error"] == "Email and password required"
+
+
+# =========================
 # REGISTER SUCCESS
 # =========================
 def test_register_success(db_session):
+    unique = str(int(time.time() * 1000000))
+
     result = AuthService.register(db_session, {
-        "email": f"reg_{time.time()}@test.com",
-        "username": f"reg_{time.time()}",
+        "email": f"reg_{unique}@test.com",
+        "username": f"reg_{unique}",
         "password": "123456"
     })
 
@@ -108,7 +134,7 @@ def test_register_duplicate_email(db_session):
 
     result = AuthService.register(db_session, {
         "email": user.email,
-        "username": "another",
+        "username": "another_user",
         "password": "123456"
     })
 
@@ -131,7 +157,7 @@ def test_current_user_success(db_session):
 # CURRENT USER NOT FOUND
 # =========================
 def test_current_user_not_found(db_session):
-    result = AuthService.current_user(db_session, 999999)
+    result = AuthService.current_user(db_session, 999999999)
 
     assert result["error"] == "User not found"
 
@@ -153,8 +179,8 @@ def test_refresh_token_success(db_session):
 # =========================
 # REFRESH TOKEN INVALID
 # =========================
-def test_refresh_token_invalid():
-    result = AuthService.refresh_token(None, "bad.token")
+def test_refresh_token_invalid(db_session):
+    result = AuthService.refresh_token(db_session, "bad.token")
 
     assert result["error"] == "Invalid refresh token"
 
@@ -167,9 +193,3 @@ def test_logout():
 
     assert result["error"] is None
     assert result["data"]["message"] == "Logged out successfully"
-
-
-
-
-
-

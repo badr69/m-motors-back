@@ -36,24 +36,7 @@ class RentalDossierController:
             db.close()
 
     # =====================
-    # GET MY DOSSIERS
-    # =====================
-    @staticmethod
-    def get_my_dossiers():
-        db = SessionLocal()
-
-        try:
-            user_id = request.current_user["user_id"]
-
-            result = RentalDossierService.get_my_dossiers(db, user_id)
-
-            return jsonify(result), 200
-
-        finally:
-            db.close()
-
-    # =====================
-    # GET ALL DOSSIERS (ADMIN)
+    # US-15 - GET ALL DOSSIERS (ADMIN)
     # =====================
     @staticmethod
     def get_dossiers():
@@ -61,7 +44,14 @@ class RentalDossierController:
         db = SessionLocal()
 
         try:
-            result = RentalDossierService.get_dossiers(db)
+            status = request.args.get("status")
+            sort = request.args.get("sort", "desc")
+
+            result = RentalDossierService.get_dossiers(
+                db,
+                status=status,
+                sort=sort
+            )
 
             return jsonify({
                 "message": "Dossiers retrieved successfully",
@@ -70,6 +60,26 @@ class RentalDossierController:
 
         finally:
             db.close()
+
+    @staticmethod
+    def get_my_dossiers():
+
+        db = SessionLocal()
+
+        try:
+            user_id = request.current_user["user_id"]
+
+            result = RentalDossierService.get_my_dossiers(db, user_id)
+
+            return jsonify({
+                "message": "My dossiers retrieved successfully",
+                "data": result["data"]
+            }), 200
+
+        finally:
+            db.close()
+
+
 
     # =====================
     # GET BY ID
@@ -155,3 +165,4 @@ class RentalDossierController:
 
         finally:
             db.close()
+

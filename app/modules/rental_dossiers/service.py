@@ -2,7 +2,9 @@ from app.modules.rental_dossiers.model import RentalDossier
 from app.modules.vehicles.model import Vehicle
 from app.core.logger import setup_logger
 
+
 logger = setup_logger("rental-dossier-service")
+allowed_status = ["approved", "rejected"]
 
 
 class RentalDossierService:
@@ -109,26 +111,62 @@ class RentalDossierService:
     # GET ALL DOSSIERS (ADMIN)
     # =====================
     @staticmethod
-    def get_dossiers(db):
+    def get_dossiers(db, status=None, sort="desc"):
 
-        dossiers = db.query(RentalDossier).all()
+        from app.modules.rental_dossiers.model import RentalDossier
+
+        query = db.query(RentalDossier)
+
+        # =====================
+        # FILTER: STATUS ONLY (MVP)
+        # =====================
+        if status:
+            query = query.filter(RentalDossier.status == status)
+
+        # =====================
+        # SORT
+        # =====================
+        if sort == "asc":
+            query = query.order_by(RentalDossier.created_at.asc())
+        else:
+            query = query.order_by(RentalDossier.created_at.desc())
+
+        dossiers = query.all()
 
         return {
             "data": [
                 {
                     "id": d.id,
-                    "user_id": d.user_id,
-                    "vehicle_id": d.vehicle_id,
+
+                    # CLIENT INFO (US-15 requirement)
+                    "client": {
+                        "id": d.user.id if d.user else None,
+                        "name": getattr(d.user, "name", None),
+                        "email": getattr(d.user, "email", None)
+                    },
+
                     "status": d.status,
                     "message": d.message,
-                    "created_at": d.created_at
+                    "created_at": d.created_at,
+
+                    "vehicle": {
+                        "id": d.vehicle.id,
+                        "brand": d.vehicle.brand,
+                        "model": d.vehicle.model
+                    } if d.vehicle else None,
+
+                    "documents": [
+                        {
+                            "id": doc.id,
+                            "filename": doc.filename
+                        }
+                        for doc in d.documents
+                    ]
                 }
                 for d in dossiers
             ],
             "error": None
         }
-
-
     # =====================
     # GET BY ID
     # =====================
@@ -304,3 +342,5 @@ class RentalDossierService:
             },
             "error": None
         }
+
+
