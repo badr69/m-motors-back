@@ -8,9 +8,6 @@ def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
 
-        # =====================
-        # GET AUTH HEADER
-        # =====================
         auth_header = request.headers.get("Authorization")
 
         if not auth_header:
@@ -23,19 +20,18 @@ def jwt_required(f):
 
         token = parts[1]
 
-        # =====================
-        # DECODE TOKEN
-        # =====================
         payload = decode_token(token)
 
         if not payload:
             return jsonify({"message": "Invalid or expired token"}), 401
 
-        # =====================
-        # BUILD USER CONTEXT (STRICT)
-        # =====================
+        user_id = payload.get("user_id")
+
+        if not isinstance(user_id, int):
+            return jsonify({"message": "Invalid token payload"}), 401
+
         request.current_user = {
-            "user_id": payload.get("user_id"),
+            "user_id": user_id,
             "email": payload.get("email"),
             "role": (payload.get("role") or "").upper()
         }
@@ -43,3 +39,4 @@ def jwt_required(f):
         return f(*args, **kwargs)
 
     return decorated
+

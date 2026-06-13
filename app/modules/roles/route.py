@@ -49,8 +49,7 @@ def get_role(role_id):
 @jwt_required
 @require_role("ADMIN")
 def update_role(role_id):
-    data = request.get_json() or {}
-    return RoleController.update(role_id, data)
+    return RoleController.update(role_id)
 
 
 # =====================

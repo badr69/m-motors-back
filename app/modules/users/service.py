@@ -68,7 +68,8 @@ class UserService:
     @staticmethod
     def get_users(db):
 
-        users = db.query(User).all()
+        # users = db.query(User).all()
+        users = db.query(User).order_by(User.id.asc()).all()
 
         return {
             "data": [
@@ -178,7 +179,15 @@ class UserService:
     # GET ME
     # =====================
     @staticmethod
-    def get_me(db, user_id):
+    def get_me(db, current_user):
+
+        if not current_user:
+            return {"data": None, "error": "Unauthorized"}
+
+        user_id = current_user.get("user_id")
+
+        if not user_id:
+            return {"data": None, "error": "Invalid token"}
 
         user = db.query(User).filter(User.id == user_id).first()
 
@@ -201,7 +210,15 @@ class UserService:
     # UPDATE ME
     # =====================
     @staticmethod
-    def update_me(db, user_id, data):
+    def update_me(db, current_user, data):
+
+        if not current_user:
+            return {"data": None, "error": "Unauthorized"}
+
+        user_id = current_user.get("user_id")
+
+        if not user_id:
+            return {"data": None, "error": "Invalid token payload"}
 
         return UserService.update_user(db, user_id, data)
 

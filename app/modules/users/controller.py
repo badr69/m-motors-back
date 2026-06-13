@@ -120,10 +120,13 @@ class UserController:
         try:
             current_user = getattr(request, "current_user", None)
 
+            if not current_user:
+                return jsonify({"message": "Unauthorized"}), 401
+
             result = UserService.get_me(db, current_user)
 
             if result.get("error"):
-                return jsonify({"message": result["error"]}), 401
+                return jsonify({"message": result["error"]}), 404
 
             return jsonify({
                 "message": "Current user retrieved successfully",
@@ -137,8 +140,12 @@ class UserController:
     def update_me():
         db = SessionLocal()
         try:
+
             current_user = getattr(request, "current_user", None)
             data = request.get_json() or {}
+
+            if not isinstance(current_user, dict):
+                return jsonify({"message": "Invalid token payload"}), 401
 
             result = UserService.update_me(db, current_user, data)
 
@@ -152,6 +159,57 @@ class UserController:
 
         finally:
             db.close()
+
+    # @staticmethod
+    # def update_me():
+    #     db = SessionLocal()
+    #     try:
+
+            # current_user = getattr(request, "current_user", None)
+            # data = request.get_json() or {}
+            #
+            # result = UserService.update_me(db, current_user, data)
+            # current_user = getattr(request, "current_user", None)
+            #
+            # if not current_user:
+            #     return jsonify({"message": "Unauthorized"}), 401
+            #
+            # user_id = current_user.get("user_id")
+            #
+            # result = UserService.update_me(db, user_id, data)
+            #
+            # if result.get("error"):
+            #     return jsonify({"message": result["error"]}), 400
+
+            # =========================
+            # ACTIVE VERSION FIXED
+            # =========================
+
+            # current_user = getattr(request, "current_user", None)
+            #
+            # if not isinstance(current_user, dict):
+            #     return jsonify({"message": "Invalid token payload"}), 401
+            #
+            # user_id = current_user.get("user_id")
+            #
+            # if not user_id:
+            #     return jsonify({"message": "Missing user_id"}), 401
+            #
+            # # 🔥 MISSING PART (CRITICAL FIX)
+            # data = request.get_json() or {}
+            #
+            # result = UserService.update_me(db, user_id, data)
+            #
+            # if result.get("error"):
+            #     return jsonify({"message": result["error"]}), 400
+            #
+            # return jsonify({
+            #     "message": "User updated successfully",
+        #         "data": result["data"]
+        #     }), 200
+        #
+        # finally:
+        #     db.close()
 
     @staticmethod
     def delete_me():
