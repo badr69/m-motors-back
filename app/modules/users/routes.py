@@ -3,7 +3,7 @@ from app.modules.users.controller import UserController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
-user_bp = Blueprint("users", __name__)
+user_bp = Blueprint("users", __name__,)
 
 # =====================
 # ADMIN ONLY

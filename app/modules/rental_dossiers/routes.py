@@ -3,7 +3,7 @@ from app.modules.rental_dossiers.controller import RentalDossierController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
-rental_dossier_bp = Blueprint("rental_dossiers", __name__)
+rental_dossier_bp = Blueprint("rental_dossiers", __name__,)
 
 # =====================
 # CLIENT ROUTES

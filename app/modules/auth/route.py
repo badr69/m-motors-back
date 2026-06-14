@@ -2,7 +2,7 @@ from flask import Blueprint
 from app.modules.auth.controller import AuthController
 from app.core.security.jwt_middleware import jwt_required
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__,)
 
 # =====================
 # PUBLIC ROUTES

@@ -3,7 +3,7 @@ from app.modules.roles.controller import RoleController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
-role_bp = Blueprint("roles", __name__)
+role_bp = Blueprint("roles", __name__,)
 
 
 # =====================
@@ -24,12 +24,6 @@ def get_roles():
 @require_role("ADMIN")
 def create_role():
     return RoleController.create_role()
-# @role_bp.route("", methods=["POST"])
-# @jwt_required
-# @require_role("ADMIN")
-# def create_role():
-#     data = request.get_json() or {}
-#     return RoleController.create_role(data)
 
 
 # =====================

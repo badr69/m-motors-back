@@ -3,7 +3,7 @@ from app.modules.vehicles.controller import VehicleController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
-vehicle_bp = Blueprint("vehicles", __name__)
+vehicle_bp = Blueprint("vehicles", __name__,)
 
 # =====================
 # PUBLIC (EPIC 3)
