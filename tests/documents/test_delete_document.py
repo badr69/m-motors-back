@@ -7,7 +7,8 @@ def test_delete_document(client, token_admin, document):
 
     assert response.status_code == 200
 
-    data = response.get_json()
+    json_data = response.get_json()
 
-    assert "message" in data
-    assert data["message"] == "Document deleted successfully"
+    # 🔥 FIX IMPORTANT
+    assert "message" in json_data
+    assert json_data["message"] == "Document deleted successfully"

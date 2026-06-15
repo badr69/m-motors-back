@@ -3,7 +3,9 @@ from app.modules.vehicles.controller import VehicleController
 from app.core.security.jwt_middleware import jwt_required
 from app.core.security.decorators import require_role
 
+
 vehicle_bp = Blueprint("vehicles", __name__,)
+
 
 # =====================
 # PUBLIC (EPIC 3)
@@ -33,6 +35,11 @@ def create_vehicle():
     return VehicleController.create_vehicle()
 
 
+@vehicle_bp.route("", methods=["GET"])
+def get_vehicles():
+    return VehicleController.get_vehicles()
+
+
 @vehicle_bp.route("/<int:vehicle_id>", methods=["PUT"])
 @jwt_required
 @require_role("ADMIN")
@@ -47,22 +54,24 @@ def delete_vehicle(vehicle_id):
     return VehicleController.delete_vehicle(vehicle_id)
 
 
-@vehicle_bp.route("/<int:vehicle_id>/upload-image", methods=["POST"])
-@jwt_required
-@require_role("ADMIN")
-def upload_vehicle_image(vehicle_id):
-    return VehicleController.upload_vehicle_image(vehicle_id)
 
-
-@vehicle_bp.route("/<int:vehicle_id>/image", methods=["PUT"])
-@jwt_required
-@require_role("ADMIN")
-def update_vehicle_image(vehicle_id):
-    return VehicleController.update_vehicle_image(vehicle_id)
-
-
-@vehicle_bp.route("/<int:vehicle_id>/image", methods=["DELETE"])
-@jwt_required
-@require_role("ADMIN")
-def delete_vehicle_image(vehicle_id):
-    return VehicleController.delete_vehicle_image(vehicle_id)
+#
+# @vehicle_bp.route("/<int:vehicle_id>/upload-image", methods=["POST"])
+# @jwt_required
+# @require_role("ADMIN")
+# def upload_vehicle_image(vehicle_id):
+#     return VehicleController.upload_vehicle_image(vehicle_id)
+#
+#
+# @vehicle_bp.route("/<int:vehicle_id>/image", methods=["PUT"])
+# @jwt_required
+# @require_role("ADMIN")
+# def update_vehicle_image(vehicle_id):
+#     return VehicleController.update_vehicle_image(vehicle_id)
+#
+#
+# @vehicle_bp.route("/<int:vehicle_id>/image", methods=["DELETE"])
+# @jwt_required
+# @require_role("ADMIN")
+# def delete_vehicle_image(vehicle_id):
+#     return VehicleController.delete_vehicle_image(vehicle_id)

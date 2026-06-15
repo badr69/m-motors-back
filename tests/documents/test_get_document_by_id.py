@@ -15,8 +15,15 @@ def test_get_document_by_id(client, token_user, document):
 
     data = json_data["data"]
 
+    # ======================
+    # FIX IMPORTANT
+    # ======================
+
     assert "id" in data
     assert "filename" in data
 
     assert data["id"] == document["id"]
-    assert data["filename"] == document["filename"]
+
+    # filename réel = UUID + filename
+    assert data["filename"].endswith(document["filename"])
+    assert document["filename"] in data["filename"]

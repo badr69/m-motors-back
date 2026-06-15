@@ -3,8 +3,6 @@ from app.core.db import SessionLocal
 from app.modules.vehicles.service import VehicleService
 
 
-
-
 class VehicleController:
 
     # =====================
@@ -14,10 +12,13 @@ class VehicleController:
     def create_vehicle():
 
         db = SessionLocal()
-        try:
-            data = request.get_json() or {}
 
-            result = VehicleService.create_vehicle(db, data)
+        try:
+            data = request.form.to_dict() if request.form else request.get_json() or {}
+
+            image = request.files.get("image")
+
+            result = VehicleService.create_vehicle(db, data, image)
 
             if result["error"]:
                 return jsonify({"message": result["error"]}), 400
@@ -37,6 +38,7 @@ class VehicleController:
     def get_vehicles():
 
         db = SessionLocal()
+
         try:
             result = VehicleService.get_vehicles(db)
 
@@ -55,6 +57,7 @@ class VehicleController:
     def get_vehicle_by_id(vehicle_id):
 
         db = SessionLocal()
+
         try:
             result = VehicleService.get_vehicle_by_id(db, vehicle_id)
 
@@ -76,13 +79,16 @@ class VehicleController:
     def update_vehicle(vehicle_id):
 
         db = SessionLocal()
-        try:
-            data = request.get_json() or {}
 
-            result = VehicleService.update_vehicle(db, vehicle_id, data)
+        try:
+            data = request.form.to_dict() if request.form else request.get_json() or {}
+
+            image = request.files.get("image")
+
+            result = VehicleService.update_vehicle(db, vehicle_id, data, image)
 
             if result["error"]:
-                return jsonify({"message": result["error"]}), 400
+                return jsonify({"message": result["error"]}), 404
 
             return jsonify({
                 "message": "Vehicle updated successfully",
@@ -99,33 +105,33 @@ class VehicleController:
     def delete_vehicle(vehicle_id):
 
         db = SessionLocal()
+
         try:
             result = VehicleService.delete_vehicle(db, vehicle_id)
 
             if result["error"]:
                 return jsonify({"message": result["error"]}), 404
 
-            return jsonify({
-                "message": result["data"]["message"]
-            }), 200
+            return jsonify(result["data"]), 200
 
         finally:
             db.close()
 
     # =====================
-    # AVAILABLE VEHICLES (EPIC 3)
+    # AVAILABLE VEHICLES
     # =====================
     @staticmethod
     def get_available_vehicles():
 
         db = SessionLocal()
+
         try:
             vehicle_type = request.args.get("vehicle_type")
 
             result = VehicleService.get_available_vehicles(db, vehicle_type)
 
             return jsonify({
-                "message": "Available vehicles",
+                "message": "Available vehicles retrieved successfully",
                 "data": result["data"]
             }), 200
 
@@ -133,12 +139,13 @@ class VehicleController:
             db.close()
 
     # =====================
-    # SEARCH VEHICLES (EPIC 3 + 4)
+    # SEARCH VEHICLES
     # =====================
     @staticmethod
     def search_vehicles():
 
         db = SessionLocal()
+
         try:
             filters = request.args.to_dict()
 
@@ -147,64 +154,8 @@ class VehicleController:
             return jsonify({
                 "message": "Search completed successfully",
                 "data": result["data"],
-                "meta": result.get("meta")
+                "meta": result["meta"]
             }), 200
 
         finally:
             db.close()
-
-
-    @staticmethod
-    def upload_vehicle_image(vehicle_id):
-
-        db = SessionLocal()
-
-        try:
-            file = request.files.get("image")
-
-            result = VehicleService.upload_vehicle_image(db, vehicle_id, file)
-
-            if result["error"]:
-                return jsonify({"message": result["error"]}), 400
-
-            return jsonify(result["data"]), 200
-
-        finally:
-            db.close()
-
-
-    @staticmethod
-    def update_vehicle_image(vehicle_id):
-
-        db = SessionLocal()
-
-        try:
-            file = request.files.get("image")
-
-            result = VehicleService.update_vehicle_image(db, vehicle_id, file)
-
-            if result["error"]:
-                return jsonify({"message": result["error"]}), 400
-
-            return jsonify(result["data"]), 200
-
-        finally:
-            db.close()
-
-    @staticmethod
-    def delete_vehicle_image(vehicle_id):
-
-        db = SessionLocal()
-
-        try:
-            result = VehicleService.delete_vehicle_image(db, vehicle_id)
-
-            if result["error"]:
-                return jsonify({"message": result["error"]}), 404
-
-            return jsonify(result["data"]), 200
-
-        finally:
-            db.close()
-
-

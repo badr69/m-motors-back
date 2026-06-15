@@ -4,10 +4,9 @@ from werkzeug.utils import secure_filename
 from app.modules.vehicles.model import Vehicle
 from app.core.logger import setup_logger
 
-
-
 logger = setup_logger("vehicle-service")
 
+UPLOAD_FOLDER = "uploads/vehicles"
 
 
 class VehicleService:
@@ -16,11 +15,26 @@ class VehicleService:
     # CREATE VEHICLE
     # =====================
     @staticmethod
-    def create_vehicle(db, data):
+    def create_vehicle(db, data, image=None):
 
         logger.info(
             f"Creating vehicle: {data.get('brand')} {data.get('model')}"
         )
+
+        filename = None
+
+        # ======================
+        # IMAGE UPLOAD
+        # ======================
+        if image and image.filename != "":
+
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+            original_name = secure_filename(image.filename)
+            filename = f"{uuid.uuid4().hex}_{original_name}"
+
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            image.save(filepath)
 
         vehicle = Vehicle(
             brand=data.get("brand"),
@@ -31,7 +45,9 @@ class VehicleService:
             transmission=data.get("transmission"),
             price=data.get("price"),
             description=data.get("description"),
-            image_url=data.get("image_url"),
+
+            image_url=f"/uploads/vehicles/{filename}" if filename else None,
+
             category=data.get("category"),
             vehicle_type=data.get("vehicle_type"),
             status="available"
@@ -134,10 +150,11 @@ class VehicleService:
     # UPDATE VEHICLE
     # =====================
     @staticmethod
-    def update_vehicle(db, vehicle_id, data):
+    def update_vehicle(db, vehicle_id, data, image=None):
 
         vehicle = db.query(Vehicle).filter(
-            Vehicle.id == vehicle_id
+            Vehicle.id == vehicle_id,
+            Vehicle.is_deleted == False
         ).first()
 
         if not vehicle:
@@ -146,6 +163,24 @@ class VehicleService:
                 "error": "Vehicle not found"
             }
 
+        # ======================
+        # IMAGE UPDATE (OPTIONAL)
+        # ======================
+        if image and image.filename != "":
+
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+            original_name = secure_filename(image.filename)
+            filename = f"{uuid.uuid4().hex}_{original_name}"
+
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            image.save(filepath)
+
+            vehicle.image_url = f"/uploads/vehicles/{filename}"
+
+        # ======================
+        # UPDATE FIELDS
+        # ======================
         for field in [
             "brand",
             "model",
@@ -155,7 +190,6 @@ class VehicleService:
             "transmission",
             "price",
             "description",
-            "image_url",
             "category",
             "vehicle_type",
             "status"
@@ -165,8 +199,6 @@ class VehicleService:
 
         db.commit()
         db.refresh(vehicle)
-
-        logger.info(f"Vehicle updated successfully: {vehicle.id}")
 
         return {
             "data": {
@@ -188,7 +220,7 @@ class VehicleService:
         }
 
     # =====================
-    # DELETE VEHICLE (US-09)
+    # DELETE VEHICLE
     # =====================
     @staticmethod
     def delete_vehicle(db, vehicle_id):
@@ -205,10 +237,7 @@ class VehicleService:
             }
 
         vehicle.is_deleted = True
-
         db.commit()
-
-        logger.info(f"Vehicle deleted successfully: {vehicle.id}")
 
         return {
             "data": {
@@ -218,7 +247,7 @@ class VehicleService:
         }
 
     # =====================
-    # GET AVAILABLE VEHICLES
+    # AVAILABLE VEHICLES
     # =====================
     @staticmethod
     def get_available_vehicles(db, vehicle_type=None):
@@ -228,11 +257,8 @@ class VehicleService:
             Vehicle.status == "available"
         )
 
-        # location / achat
         if vehicle_type:
-            query = query.filter(
-                Vehicle.vehicle_type == vehicle_type
-            )
+            query = query.filter(Vehicle.vehicle_type == vehicle_type)
 
         vehicles = query.all()
 
@@ -269,10 +295,6 @@ class VehicleService:
             Vehicle.status == "available"
         )
 
-        # =====================
-        # FILTERS
-        # =====================
-
         if filters.get("vehicle_type"):
             query = query.filter(
                 Vehicle.vehicle_type == filters["vehicle_type"]
@@ -298,35 +320,16 @@ class VehicleService:
                 Vehicle.mileage <= int(filters["max_mileage"])
             )
 
-        # =====================
-        # SORTING
-        # =====================
-
         sort = filters.get("sort")
 
         if sort == "price_asc":
-            query = query.order_by(
-                Vehicle.price.asc()
-            )
-
+            query = query.order_by(Vehicle.price.asc())
         elif sort == "price_desc":
-            query = query.order_by(
-                Vehicle.price.desc()
-            )
-
+            query = query.order_by(Vehicle.price.desc())
         elif sort == "year_desc":
-            query = query.order_by(
-                Vehicle.year.desc()
-            )
-
+            query = query.order_by(Vehicle.year.desc())
         elif sort == "mileage_asc":
-            query = query.order_by(
-                Vehicle.mileage.asc()
-            )
-
-        # =====================
-        # PAGINATION
-        # =====================
+            query = query.order_by(Vehicle.mileage.asc())
 
         page = int(filters.get("page", 1))
         limit = int(filters.get("limit", 10))
@@ -334,7 +337,6 @@ class VehicleService:
         offset = (page - 1) * limit
 
         total = query.count()
-
         vehicles = query.offset(offset).limit(limit).all()
 
         return {
@@ -356,175 +358,11 @@ class VehicleService:
                 }
                 for v in vehicles
             ],
-
             "meta": {
                 "total": total,
                 "page": page,
                 "limit": limit,
-                "pages": (
-                    total // limit
-                ) + (
-                    1 if total % limit else 0
-                )
-            },
-
-            "error": None
-        }
-
-    @staticmethod
-    def upload_vehicle_image(db, vehicle_id, file):
-
-        logger.info(f"Uploading image for vehicle: {vehicle_id}")
-
-        # =====================
-        # GET VEHICLE
-        # =====================
-        vehicle = db.query(Vehicle).filter(
-            Vehicle.id == vehicle_id,
-            Vehicle.is_deleted == False
-        ).first()
-
-        if not vehicle:
-            return {
-                "data": None,
-                "error": "Vehicle not found"
-            }
-
-        # =====================
-        # CHECK FILE
-        # =====================
-        if not file or file.filename == "":
-            return {
-                "data": None,
-                "error": "Invalid file"
-            }
-
-        # =====================
-        # UPLOAD FOLDER
-        # =====================
-        upload_folder = "uploads"
-        os.makedirs(upload_folder, exist_ok=True)
-
-        # =====================
-        # SECURE + UNIQUE NAME
-        # =====================
-        original_name = secure_filename(file.filename)
-        unique_name = f"{uuid.uuid4().hex}_{original_name}"
-
-        filepath = os.path.join(upload_folder, unique_name)
-
-        # =====================
-        # SAVE FILE
-        # =====================
-        file.save(filepath)
-
-        # =====================
-        # UPDATE VEHICLE
-        # =====================
-        vehicle.image_url = f"/uploads/{unique_name}"
-
-        db.commit()
-        db.refresh(vehicle)
-
-        logger.info(f"Image uploaded successfully for vehicle: {vehicle_id}")
-
-        return {
-            "data": {
-                "message": "Image uploaded successfully",
-                "image_url": vehicle.image_url
-            },
-            "error": None
-        }
-
-    @staticmethod
-    def update_vehicle_image(db, vehicle_id, file):
-
-        vehicle = db.query(Vehicle).filter(
-            Vehicle.id == vehicle_id,
-            Vehicle.is_deleted == False
-        ).first()
-
-        if not vehicle:
-            return {
-                "data": None,
-                "error": "Vehicle not found"
-            }
-
-        if not file or file.filename == "":
-            return {
-                "data": None,
-                "error": "Invalid file"
-            }
-
-        upload_folder = "uploads"
-        os.makedirs(upload_folder, exist_ok=True)
-
-        # =====================
-        # DELETE OLD IMAGE (OPTIONAL)
-        # =====================
-        if vehicle.image_url:
-            old_path = vehicle.image_url.replace("/uploads/", "uploads/")
-            if os.path.exists(old_path):
-                os.remove(old_path)
-
-        # =====================
-        # SAVE NEW IMAGE
-        # =====================
-        original_name = secure_filename(file.filename)
-        unique_name = f"{uuid.uuid4().hex}_{original_name}"
-
-        filepath = os.path.join(upload_folder, unique_name)
-        file.save(filepath)
-
-        # =====================
-        # UPDATE DB
-        # =====================
-        vehicle.image_url = f"/uploads/{unique_name}"
-
-        db.commit()
-        db.refresh(vehicle)
-
-        return {
-            "data": {
-                "message": "Image updated successfully",
-                "image_url": vehicle.image_url
-            },
-            "error": None
-        }
-
-    @staticmethod
-    def delete_vehicle_image(db, vehicle_id):
-
-        vehicle = db.query(Vehicle).filter(
-            Vehicle.id == vehicle_id,
-            Vehicle.is_deleted == False
-        ).first()
-
-        if not vehicle:
-            return {
-                "data": None,
-                "error": "Vehicle not found"
-            }
-
-        # =====================
-        # DELETE FILE FROM VPS
-        # =====================
-        if vehicle.image_url:
-            file_path = vehicle.image_url.replace("/uploads/", "uploads/")
-
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-        # =====================
-        # UPDATE DB
-        # =====================
-        vehicle.image_url = None
-
-        db.commit()
-
-        return {
-            "data": {
-                "message": "Image deleted successfully"
+                "pages": (total // limit) + (1 if total % limit else 0)
             },
             "error": None
         }

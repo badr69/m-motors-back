@@ -72,7 +72,7 @@ def test_create_user(db_session, user_role):
 
 
 # ======================
-# GET USER BY ID (FIXED)
+# GET USER BY ID
 # ======================
 def test_get_user_by_id(db_session, test_user):
 
@@ -137,14 +137,18 @@ def test_delete_user(db_session, user_role):
 # ======================
 def test_get_me(db_session, test_user):
 
+    current_user = {
+        "user_id": test_user.id,
+        "role": "USER"
+    }
+
     result = UserService.get_me(
         db_session,
-        test_user.id
+        current_user
     )
 
     assert result["error"] is None
     assert result["data"]["email"] == test_user.email
-
 
 
 # ======================
@@ -152,9 +156,14 @@ def test_get_me(db_session, test_user):
 # ======================
 def test_update_me(db_session, test_user):
 
+    current_user = {
+        "user_id": test_user.id,
+        "role": "USER"
+    }
+
     result = UserService.update_me(
         db_session,
-        test_user.id,
+        current_user,
         {"phone": "0700000000"}
     )
 
@@ -165,23 +174,11 @@ def test_update_me(db_session, test_user):
 # ======================
 # DELETE ME
 # ======================
-def test_delete_me(db_session, user_role):
-
-    user = User(
-        username="meuser",
-        email="me@test.com",
-        password_hash=generate_password_hash("123456"),
-        role_id=user_role.id,
-        is_active=True
-    )
-
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
+def test_delete_me(db_session, test_user):
 
     result = UserService.delete_me(
         db_session,
-        user.id
+        test_user.id
     )
 
     assert result["error"] is None
