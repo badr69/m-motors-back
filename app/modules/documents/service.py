@@ -21,14 +21,54 @@ class DocumentService:
     @staticmethod
     def create_document(db, data, file):
 
+        # =====================
+        # VALIDATE FILE
+        # =====================
         if not file or file.filename == "":
             return {"data": None, "error": "No file provided"}
 
         if not allowed_file(file.filename):
             return {"data": None, "error": "File type not allowed"}
 
+        # =====================
+        # VALIDATE DOSSIER ID
+        # =====================
+        dossier_id = data.get("dossier_id")
+
+        if not dossier_id:
+            return {"data": None, "error": "dossier_id required"}
+
+        try:
+            dossier_id = int(dossier_id)
+        except ValueError:
+            return {"data": None, "error": "invalid dossier_id"}
+
+        # =====================
+        # VALIDATE USER ID
+        # =====================
+        user_id = data.get("user_id")
+
+        if not user_id:
+            return {"data": None, "error": "user_id required"}
+
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return {"data": None, "error": "invalid user_id"}
+
+        # =====================
+        # TYPE DOCUMENT (SAFE DEFAULT)
+        # =====================
+        type_document = data.get("type_document") or "general"
+
+        # =====================
+        # CREATE UPLOAD FOLDER
+        # =====================
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+        # =====================
+        # GENERATE FILE NAME
+        # =====================
         ext = file.filename.rsplit(".", 1)[1].lower()
         filename = f"{uuid.uuid4().hex}.{ext}"
         filepath = os.path.join(UPLOAD_FOLDER, filename)
@@ -36,12 +76,12 @@ class DocumentService:
         file.save(filepath)
 
         # =====================
-        # ORM OBJECT (FIX MAJEUR)
+        # CREATE ORM OBJECT
         # =====================
         document = Document(
-            dossier_id=data.get("dossier_id"),
-            user_id=data.get("user_id"),
-            type_document=data.get("type_document"),
+            dossier_id=dossier_id,
+            user_id=user_id,
+            type_document=type_document,
             filename=filename,
             filepath=filepath,
             mime_type=file.mimetype
@@ -51,6 +91,9 @@ class DocumentService:
         db.commit()
         db.refresh(document)
 
+        # =====================
+        # RESPONSE
+        # =====================
         return {
             "data": {
                 "id": document.id,
@@ -61,30 +104,6 @@ class DocumentService:
                 "filepath": document.filepath,
                 "mime_type": document.mime_type
             },
-            "error": None
-        }
-
-    # =====================
-    # GET ALL DOCUMENTS
-    # =====================
-    @staticmethod
-    def get_documents(db):
-
-        documents = db.query(Document).all()
-
-        return {
-            "data": [
-                {
-                    "id": d.id,
-                    "dossier_id": d.dossier_id,
-                    "user_id": d.user_id,
-                    "type_document": d.type_document,
-                    "filename": d.filename,
-                    "filepath": d.filepath,
-                    "mime_type": d.mime_type
-                }
-                for d in documents
-            ],
             "error": None
         }
 
@@ -109,6 +128,30 @@ class DocumentService:
                 "filepath": document.filepath,
                 "mime_type": document.mime_type
             },
+            "error": None
+        }
+
+    # =====================
+    # GET all documents
+    # =====================
+    @staticmethod
+    def get_documents(db):
+
+        documents = db.query(Document).all()
+
+        return {
+            "data": [
+                {
+                    "id": d.id,
+                    "dossier_id": d.dossier_id,
+                    "user_id": d.user_id,
+                    "type_document": d.type_document,
+                    "filename": d.filename,
+                    "filepath": d.filepath,
+                    "mime_type": d.mime_type
+                }
+                for d in documents
+            ],
             "error": None
         }
 
@@ -138,146 +181,3 @@ class DocumentService:
 
 
 
-
-# import os
-# import uuid
-# from app.core.security.extensions import ALLOWED_DOCUMENT_EXTENSIONS
-#
-#
-# UPLOAD_FOLDER = "uploads/documents"
-#
-#
-# def allowed_file(filename):
-#     return (
-#         "." in filename
-#         and filename.rsplit(".", 1)[1].lower() in ALLOWED_DOCUMENT_EXTENSIONS
-#     )
-#
-#
-# class DocumentService:
-#
-#     # =====================
-#     # CREATE DOCUMENT
-#     # =====================
-#     @staticmethod
-#     def create_document(db, data, file):
-#
-#         # =====================
-#         # VALIDATION FILE
-#         # =====================
-#         if not file or file.filename == "":
-#             return {
-#                 "data": None,
-#                 "error": "No file provided"
-#             }
-#
-#         if not allowed_file(file.filename):
-#             return {
-#                 "data": None,
-#                 "error": "File type not allowed"
-#             }
-#
-#         # =====================
-#         # PREPARE UPLOAD FOLDER
-#         # =====================
-#         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-#
-#         # =====================
-#         # SECURE FILE NAME
-#         # =====================
-#         ext = file.filename.rsplit(".", 1)[1].lower()
-#         filename = f"{uuid.uuid4()}.{ext}"
-#
-#         filepath = os.path.join(UPLOAD_FOLDER, filename)
-#
-#         # =====================
-#         # SAVE FILE ON DISK
-#         # =====================
-#         file.save(filepath)
-#
-#         # =====================
-#         # BUILD DOCUMENT DATA
-#         # =====================
-#         document_data = {
-#             "dossier_id": data.get("dossier_id"),
-#             "user_id": data.get("user_id"),
-#             "type_document": data.get("type_document"),
-#             "filename": file.filename,
-#             "filepath": filepath,
-#             "mime_type": file.mimetype
-#         }
-#
-#         # =====================
-#         # SAVE IN DB
-#         # =====================
-#         document = db.add(document_data)
-#
-#         return {
-#             "data": document_data,
-#             "error": None
-#         }
-#
-#     # =====================
-#     # GET ALL DOCUMENTS
-#     # =====================
-#     @staticmethod
-#     def get_documents(db):
-#
-#         documents = db.query().all()
-#
-#         return {
-#             "data": documents,
-#             "error": None
-#         }
-#
-#     # =====================
-#     # GET DOCUMENT BY ID
-#     # =====================
-#     @staticmethod
-#     def get_document_by_id(db, doc_id):
-#
-#         document = db.query().filter_by(id=doc_id).first()
-#
-#         if not document:
-#             return {
-#                 "data": None,
-#                 "error": "Document not found"
-#             }
-#
-#         return {
-#             "data": document,
-#             "error": None
-#         }
-#
-#     # =====================
-#     # DELETE DOCUMENT
-#     # =====================
-#     @staticmethod
-#     def delete_document(db, doc_id):
-#
-#         document = db.query().filter_by(id=doc_id).first()
-#
-#         if not document:
-#             return {
-#                 "data": None,
-#                 "error": "Document not found"
-#             }
-#
-#         # =====================
-#         # DELETE FILE FROM DISK
-#         # =====================
-#         if document.get("filepath") and os.path.exists(document["filepath"]):
-#             os.remove(document["filepath"])
-#
-#         # =====================
-#         # DELETE FROM DB
-#         # =====================
-#         db.delete(document)
-#         db.commit()
-#
-#         return {
-#             "data": {
-#                 "message": "Document deleted successfully"
-#             },
-#             "error": None
-#         }

@@ -52,3 +52,4 @@ def get_all_dossiers():
 @require_role("ADMIN")
 def update_status(dossier_id):
     return RentalDossierController.update_status(dossier_id)
+

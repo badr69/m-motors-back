@@ -203,12 +203,14 @@ class RentalDossierService:
                 "vehicle": {
                     "id": dossier.vehicle.id,
                     "brand": dossier.vehicle.brand,
-                    "model": dossier.vehicle.model
+                    "model": dossier.vehicle.model,
+                    "image_url": dossier.vehicle.image_url
                 } if dossier.vehicle else None,
 
                 "documents": [
                     {
                         "id": doc.id,
+                        "type_document": doc.type_document,
                         "filename": doc.filename,
                         "filepath": doc.filepath
                     }

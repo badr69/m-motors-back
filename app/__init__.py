@@ -1,12 +1,10 @@
 from flask import Flask
 from dotenv import load_dotenv
-
 from flask_cors import CORS
 from app.core.config import Config
 from app.core.db import Base, engine, SessionLocal
-
 from app.modules.roles.seed import seed_roles
-
+from flask import send_from_directory
 
 def create_app():
 
@@ -81,8 +79,31 @@ def create_app():
     def not_found(error):
         return {"message": "Route not found"}, 404
 
+
     @app.errorhandler(500)
     def server_error(error):
         return {"message": "Internal server error"}, 500
+
+    import os
+
+    @app.route("/uploads/vehicles/<path:filename>")
+    def serve_vehicle_image(filename):
+
+        upload_folder = os.path.join(
+            app.root_path,
+            "..",
+            "uploads",
+            "vehicles"
+        )
+
+        upload_folder = os.path.abspath(upload_folder)
+
+        print("UPLOAD FOLDER =", upload_folder)
+        print("FILENAME =", filename)
+
+        return send_from_directory(
+            upload_folder,
+            filename
+        )
 
     return app
