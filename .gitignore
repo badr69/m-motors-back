@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # uploads folder
-uploads/
+#uploads/
 
 # bdd test sqlite
 test_db.sqlite
