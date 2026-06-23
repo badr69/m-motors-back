@@ -136,6 +136,9 @@ class UserService:
             if existing and existing.id != user.id:
                 return {"data": None, "error": "Email already exists"}
 
+        if "password" in data and data["password"]:
+            user.password_hash = hash_password(data["password"])
+
         for field in ["username", "email", "phone", "address"]:
             if field in data:
                 setattr(user, field, data[field])

@@ -1,3 +1,6 @@
+from app.modules import Role
+
+
 def seed_roles(db):
     roles = ["ADMIN", "CLIENT"]
 
