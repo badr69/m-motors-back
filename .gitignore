@@ -44,13 +44,18 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+# Unit test / coverage reports
 htmlcov/
 .tox/
 .nox/
-coverage.json
-.coverage
-.coverage.*
+
+# Conserver les fichiers de couverture pour l'évaluation
+# coverage.json
+# .coverage
+# .coverage.*
+
 .cache
+
 nosetests.xml
 coverage.xml
 *.cover
