@@ -74,8 +74,9 @@ class RentalDossierService:
     @staticmethod
     def get_my_dossiers(db, user_id):
 
-        dossiers = db.query(RentalDossier).filter(
-            RentalDossier.user_id == user_id
+        dossiers = db.query(RentalDossier).join(Vehicle).filter(
+            RentalDossier.user_id == user_id,
+            Vehicle.is_deleted == False
         ).all()
 
         return {
@@ -91,7 +92,7 @@ class RentalDossierService:
                         "id": d.vehicle.id,
                         "brand": d.vehicle.brand,
                         "model": d.vehicle.model
-                    } if d.vehicle else None,
+                    },
 
                     "documents": [
                         {
@@ -105,6 +106,77 @@ class RentalDossierService:
             ],
             "error": None
         }
+
+    # @staticmethod
+    # def get_my_dossiers(db, user_id):
+    #
+    #     dossiers = db.query(RentalDossier).filter(
+    #         RentalDossier.user_id == user_id
+    #     ).all()
+    #
+    #     return {
+    #         "data": [
+    #             {
+    #                 "id": d.id,
+    #                 "status": d.status,
+    #                 "message": d.message,
+    #                 "created_at": d.created_at,
+    #
+    #                 # EPIC 6 FRONT REQUIREMENT
+    #                 "vehicle": {
+    #                     "id": d.vehicle.id,
+    #                     "brand": d.vehicle.brand,
+    #                     "model": d.vehicle.model
+    #                 } if d.vehicle and not d.vehicle.is_deleted else None,
+    #
+    #                 "documents": [
+    #                     {
+    #                         "id": doc.id,
+    #                         "filename": doc.filename
+    #                     }
+    #                     for doc in d.documents
+    #                 ]
+    #             }
+    #             for d in dossiers
+    #         ],
+    #         "error": None
+    #     }
+
+
+    # @staticmethod
+    # def get_my_dossiers(db, user_id):
+    #
+    #     dossiers = db.query(RentalDossier).filter(
+    #         RentalDossier.user_id == user_id
+    #     ).all()
+    #
+    #     return {
+    #         "data": [
+    #             {
+    #                 "id": d.id,
+    #                 "status": d.status,
+    #                 "message": d.message,
+    #                 "created_at": d.created_at,
+    #
+    #                 # EPIC 6 FRONT REQUIREMENT
+    #                 "vehicle": {
+    #                     "id": d.vehicle.id,
+    #                     "brand": d.vehicle.brand,
+    #                     "model": d.vehicle.model
+    #                 } if d.vehicle else None,
+    #
+    #                 "documents": [
+    #                     {
+    #                         "id": doc.id,
+    #                         "filename": doc.filename
+    #                     }
+    #                     for doc in d.documents
+    #                 ]
+    #             }
+    #             for d in dossiers
+    #         ],
+    #         "error": None
+    #     }
 
 
     # =====================
