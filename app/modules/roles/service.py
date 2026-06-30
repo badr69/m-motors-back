@@ -14,7 +14,7 @@ class RoleService:
         if not role:
             return None
 
-        return role.strip().lower()
+        return role.strip().upper()
 
     # =====================
     # CREATE ROLE
