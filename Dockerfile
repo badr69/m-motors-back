@@ -3,6 +3,7 @@ FROM python:3.11-slim
 
 # Dossier de travail dans le container
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 # Copier requirements
 COPY requirements.txt .
