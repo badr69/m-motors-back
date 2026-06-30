@@ -28,11 +28,89 @@ jobs:
             docker compose up -d --build
 
             # ======================
-            # MIGRATION ALEMBIC
+            # ATTENDRE QUE LE CONTENEUR SOIT PRÊT
             # ======================
-            docker exec m-motors-back alembic upgrade head
+            sleep 5
+
+            # ======================
+            # RÉPARATION MIGRATION ALEMBIC
+            # ======================
+            echo "🔧 Vérification et réparation des migrations..."
+
+            # Vérifier si la table alembic_version existe
+            docker exec m-motors-back bash -c "
+              if alembic current 2>/dev/null; then
+                echo '✅ Historique valide, migration normale...'
+                alembic upgrade head
+              else
+                echo '⚠️  Historique cassé, réparation en cours...'
+                # Supprimer la table alembic_version
+                python -c \"
+                  from app import create_app
+                  from app.extensions import db
+                  app = create_app()
+                  with app.app_context():
+                    db.session.execute('DROP TABLE IF EXISTS alembic_version CASCADE')
+                    db.session.commit()
+                    print('✅ Table alembic_version supprimée')
+                \"
+                # Réinitialiser et appliquer les migrations
+                alembic stamp head
+                alembic upgrade head
+              fi
+            "
 
             # ======================
             # SEED INITIAL DATA
             # ======================
             docker exec m-motors-back python scripts/create_admin.py
+
+            echo "✅ Déploiement terminé avec succès"
+
+
+
+
+
+
+
+
+
+
+#name: CD Deploy to VPS
+#
+#on:
+#  push:
+#    branches: ["main"]
+#
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Deploy via SSH on VPS
+#        uses: appleboy/ssh-action@v1.0.3
+#        with:
+#          host: ${{ secrets.VPS_HOST }}
+#          username: ${{ secrets.VPS_USER }}
+#          key: ${{ secrets.VPS_SSH_KEY }}
+#
+#          script: |
+#            cd /var/www/m-motors/m-motors-back
+#
+#            git pull origin main
+#
+#            docker compose down
+#            docker compose up -d --build
+#
+#            # ======================
+#            # MIGRATION ALEMBIC
+#            # ======================
+#            docker exec m-motors-back alembic upgrade head
+#
+#            # ======================
+#            # SEED INITIAL DATA
+#            # ======================
+#            docker exec m-motors-back python scripts/create_admin.py
