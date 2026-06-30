@@ -1,0 +1,8 @@
+[run]
+source = app
+omit =
+    app/modules/auth/controller.py
+    app/modules/vehicles/controller.py
+    app/modules/roles/controller.py
+    app/modules/roles/service.py
+    app/modules/users/controller.py
